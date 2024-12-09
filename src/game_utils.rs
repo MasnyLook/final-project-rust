@@ -21,7 +21,7 @@ fn _gcd(x : u32, y : u32) -> u32 {
 }
 
 pub fn start_game(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_id: &Rc<RefCell<Option<i32>>>) {
-    let start_button = document.get_element_by_id("startButton").unwrap();
+    let start_button = document.get_element_by_id("startgame").unwrap();
     start_button.set_attribute("style", "display: none;").unwrap();
 
     let game_container = document.get_element_by_id("game").unwrap();
