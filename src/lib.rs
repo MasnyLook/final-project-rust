@@ -1,6 +1,6 @@
 mod game_buttons;
 mod game_html_template;
-mod game_utils;
+pub mod game_utils;
 
 use std::cell::RefCell;
 use std::rc::Rc;

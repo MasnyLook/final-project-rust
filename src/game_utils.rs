@@ -47,8 +47,8 @@ pub fn start_game(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_id
     let input_element = document.get_element_by_id("inputNumber").unwrap();
     input_element.dyn_ref::<HtmlInputElement>().unwrap().set_value("");
 
-    let answerBox = document.get_element_by_id("answerBox").unwrap();
-    answerBox.dyn_ref::<HtmlInputElement>().unwrap().set_value("");
+    let answer_box = document.get_element_by_id("answerBox").unwrap();
+    answer_box.dyn_ref::<HtmlInputElement>().unwrap().set_value("");
 
     *secret_value.borrow_mut() = generate_random_number() % 100 + 1;
 }
@@ -139,7 +139,7 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>) {
     total_trials_info.set_text_content(Some(&format!("Total {}", number_of_attempts)));
 }
 
-fn get_number_of_seconds(timer_text: &str) -> u32 {
+pub fn get_number_of_seconds(timer_text: &str) -> u32 {
     let parts: Vec<&str> = timer_text.split(" ").collect();
     match parts[1].parse::<u32>() {
         Ok(seconds) => seconds,
