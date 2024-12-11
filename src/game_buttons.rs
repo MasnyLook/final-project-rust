@@ -82,7 +82,9 @@ pub fn setup_reroll_button(document: &Document, secret_value: &Rc<RefCell<u32>>)
     let reroll_closure = Closure::wrap(Box::new(move || {
         *secret_value_clone.borrow_mut() = game_utils::generate_random_number() % 100 + 1;
         let result = document_clone.get_element_by_id("result").expect("result element not found");
-        result.set_text_content(Some("Rerolled!"));
+        result.set_text_content(None);
+        let answerresult = document_clone.get_element_by_id("answerResult").expect("result element not found");
+        answerresult.set_text_content(Some("Rerolled!"));
         game_utils::update_attempts(&document_clone);
     }) as Box<dyn FnMut()>);
 
