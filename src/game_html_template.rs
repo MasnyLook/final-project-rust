@@ -1,13 +1,18 @@
+use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element, HtmlInputElement};
 
-pub fn create_startgame_div(document: &Document) -> Result<Element, JsValue> {
+use crate::game_abstract_class::Game;
+
+pub fn create_startgame_div(document: &Document, game: &Rc<dyn Game>) -> Result<Element, JsValue> {
     let startgame = document.create_element("div")?;
     startgame.set_attribute("id", "startgame")?;
     startgame.set_attribute("style", "text-align: center; margin-top: 20px;")?;
 
     let description = document.create_element("p")?;
-    description.set_text_content(Some("Welcome to the Guess the Number game! Enter a number and get the result of gcd(x, secret_value). If the secret value is too hard to guess, you can reroll it. When you hit the start button, the timer starts."));
+    let description_text = format!("Welcome to the Guess the Number game! Enter a number and get the result of {}. If the secret value is too hard to guess, you can reroll it. When you hit the start button, the timer starts.", game.result_string());
+    description.set_text_content(Some(&description_text));
     description.set_attribute("style", "margin-bottom: 20px; font-size: 16px;")?;
     startgame.append_child(&description)?;
     
@@ -50,7 +55,7 @@ pub fn create_endgame_div(document: &Document) -> Result<Element, JsValue> {
     Ok(endgame)
 }
 
-pub fn create_game_template(document: &Document) -> Result<Element, JsValue> {
+pub fn create_game_template(document: &Document, game: &Rc<dyn Game>) -> Result<Element, JsValue> {
     let game_container = document.create_element("div")?;
     game_container.set_attribute("id", "game")?;
     
@@ -66,7 +71,7 @@ pub fn create_game_template(document: &Document) -> Result<Element, JsValue> {
 
     let button = document.create_element("button")?;
     button.set_attribute("id", "click")?;
-    button.set_text_content(Some("gcd"));
+    button.set_text_content(Some(game.click_button().as_str()));
     game_container.append_child(&button)?;
 
     let result = document.create_element("p")?;

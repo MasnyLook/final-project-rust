@@ -16,22 +16,6 @@ use crate::game_abstract_class::Game;
 use crate::gcd_game::Game_gcd;
 use crate::dividers_game::Game_dividers;
 
-// Called by our JS entry point to run the example
-// #[wasm_bindgen(start)]
-// fn run() -> Result<(), JsValue> {
-//     // Use `web_sys`'s global `window` function to get a handle on the global
-//     // window object.
-//     let window = web_sys::window().expect("no global `window` exists");
-//     let document = window.document().expect("should have a document on window");
-//     let body = document.body().expect("document should have a body");
-
-//     let location = document.location();
-
-//     initialize_game(&document, &body);
-
-//     Ok(())
-// }
-
 #[wasm_bindgen]
 pub fn main(pathname: String) -> Result<(), JsValue> {
     // Use `web_sys`'s global `window` function to get a handle on the global
@@ -41,26 +25,26 @@ pub fn main(pathname: String) -> Result<(), JsValue> {
     let body = document.body().expect("document should have a body");
 
     if pathname.ends_with("index.html") {
-        let game = Rc::new(Game_gcd);
-        initialize_game(&document, &body, &window, game);
+        let game: Rc<dyn Game> = Rc::new(Game_gcd);
+        initialize_game(&document, &body, &window, &game);
     } else if pathname.ends_with("main.html") {
         mainpage_html::create_main_page(&document, &body);
     } else if pathname.ends_with("dividers") {
-        let game = Rc::new(Game_dividers);
-        initialize_game(&document, &body, &window, game);
+        let game: Rc<dyn Game> = Rc::new(Game_dividers);
+        initialize_game(&document, &body, &window, &game);
     }
 
     Ok(())
 }
 
-fn initialize_game(document: &Document, body: &Element, window: &web_sys::Window, game: Rc<dyn Game>) {
+fn initialize_game(document: &Document, body: &Element, window: &web_sys::Window, game: &Rc<dyn Game>) {
     let secret_value = Rc::new(RefCell::new(42));
     let timer_id = Rc::new(RefCell::new(None));
 
-    let start_game_div = game_html_template::create_startgame_div(&document).unwrap();
+    let start_game_div = game_html_template::create_startgame_div(&document, game).unwrap();
     body.append_child(&start_game_div).unwrap();
 
-    let game_container = game_html_template::create_game_template(&document).unwrap();
+    let game_container = game_html_template::create_game_template(&document, game).unwrap();
     body.append_child(&game_container).unwrap();
 
     let answer_box = game_html_template::create_answer_box(&document).unwrap();

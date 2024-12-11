@@ -21,10 +21,11 @@ pub fn setup_start_button(document: &Document, secret_value: &Rc<RefCell<u32>>, 
     start_closure.forget();
 }
 
-pub fn setup_click_button(document: &Document, secret_value: &Rc<RefCell<u32>>, window: &web_sys::Window, game: Rc<dyn Game>) {
+pub fn setup_click_button(document: &Document, secret_value: &Rc<RefCell<u32>>, window: &web_sys::Window, game: &Rc<dyn Game>) {
     let document_clone = document.clone();
     let secret_value_clone = Rc::clone(&secret_value);
     let window_clone = window.clone();
+    let game_clone = Rc::clone(&game);
     let closure = Closure::wrap(Box::new(move || {
         let input_element = document_clone.get_element_by_id("inputNumber").expect("inputNumber element not found");
         let input_value = input_element.dyn_ref::<HtmlInputElement>().expect("inputNumber is not an HtmlInputElement").value();
@@ -36,7 +37,7 @@ pub fn setup_click_button(document: &Document, secret_value: &Rc<RefCell<u32>>, 
         }
 
         // let result = game_utils::compute_function(input_number, *secret_value_clone.borrow());
-        let result = game.compute_function(input_number, *secret_value_clone.borrow());
+        let result = game_clone.compute_function(input_number, *secret_value_clone.borrow());
         let result_element = document_clone.get_element_by_id("result").expect("result element not found");
         result_element.set_text_content(Some(&format!("Result: {}", result)));
 

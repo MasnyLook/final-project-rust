@@ -6,6 +6,14 @@ impl Game for Game_dividers {
     fn compute_function (&self, input_value : u32, secret_value : u32) -> u32 {
         _dividers(input_value, secret_value)
     }
+
+    fn result_string(&self) -> String {
+        "number_of_dividers(x + secret_value)".to_string()
+    }
+
+    fn click_button(&self) -> String {
+        "dividers".to_string()
+    }
 }
 
 fn _dividers(x : u32, y : u32) -> u32 {
@@ -13,7 +21,7 @@ fn _dividers(x : u32, y : u32) -> u32 {
     let mut counter = 0;
     let mut i = 1;
 
-    while i <= value {
+    while i * i <= value {
         if value % i == 0 {
             if i * i == value {
                 counter += 1;
