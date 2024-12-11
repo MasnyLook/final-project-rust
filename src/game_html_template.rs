@@ -41,6 +41,12 @@ pub fn create_endgame_div(document: &Document) -> Result<Element, JsValue> {
     restart_button.set_text_content(Some("Restart"));
     endgame.append_child(&restart_button)?;
 
+    let link_to_main = document.create_element("a")?;
+    link_to_main.set_attribute("href", "main.html")?;
+    link_to_main.set_text_content(Some("Go to list of games"));
+    link_to_main.set_attribute("style", "display: block; margin-top: 20px; font-size: 16px; color: #1E90FF; text-decoration: none;")?;
+    endgame.append_child(&link_to_main)?;
+
     Ok(endgame)
 }
 

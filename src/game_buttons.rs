@@ -5,6 +5,8 @@ use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element, HtmlInputElement};
 
+use crate::game_abstract_class::Game;
+
 
 pub fn setup_start_button(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_id: &Rc<RefCell<Option<i32>>>) {
     let secret_value_clone = Rc::clone(&secret_value);
@@ -19,15 +21,22 @@ pub fn setup_start_button(document: &Document, secret_value: &Rc<RefCell<u32>>, 
     start_closure.forget();
 }
 
-pub fn setup_click_button(document: &Document, secret_value: &Rc<RefCell<u32>>) {
+pub fn setup_click_button(document: &Document, secret_value: &Rc<RefCell<u32>>, window: &web_sys::Window, game: Rc<dyn Game>) {
     let document_clone = document.clone();
     let secret_value_clone = Rc::clone(&secret_value);
+    let window_clone = window.clone();
     let closure = Closure::wrap(Box::new(move || {
         let input_element = document_clone.get_element_by_id("inputNumber").expect("inputNumber element not found");
         let input_value = input_element.dyn_ref::<HtmlInputElement>().expect("inputNumber is not an HtmlInputElement").value();
         let input_number: u32 = input_value.parse().unwrap_or(0);
 
-        let result = game_utils::compute_function(input_number, *secret_value_clone.borrow());
+        if input_number < 1 || input_number > 100 {
+            window_clone.alert_with_message("Please enter a number between 1 and 100").expect("Failed to display alert");
+            return;
+        }
+
+        // let result = game_utils::compute_function(input_number, *secret_value_clone.borrow());
+        let result = game.compute_function(input_number, *secret_value_clone.borrow());
         let result_element = document_clone.get_element_by_id("result").expect("result element not found");
         result_element.set_text_content(Some(&format!("Result: {}", result)));
 
