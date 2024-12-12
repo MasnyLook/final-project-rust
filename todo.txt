@@ -1,0 +1,3 @@
+game design:
+reconsider system of points, before creating the leaderboard
+maybe add some hearts (as pictures)
