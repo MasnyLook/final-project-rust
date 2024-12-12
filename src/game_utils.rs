@@ -1,37 +1,34 @@
 use wasm_bindgen::prelude::*;
 
+use getrandom::getrandom;
 use std::cell::RefCell;
 use std::rc::Rc;
-use getrandom::getrandom;
-use web_sys::{Document, Element, HtmlInputElement};
+use web_sys::{Document, HtmlInputElement};
 
-
-pub fn compute_function (input_value : u32, secret_value : u32) -> u32 {
-    _gcd(input_value, secret_value)
-}
-
-fn _gcd(x : u32, y : u32) -> u32 {
-    if x < y {
-        return _gcd(y, x);
-    }
-    if y == 0 {
-        return x;
-    }
-    _gcd(y, x % y)
-}
-
-pub fn start_game(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_id: &Rc<RefCell<Option<i32>>>) {
+pub fn start_game(
+    document: &Document,
+    secret_value: &Rc<RefCell<u32>>,
+    timer_id: &Rc<RefCell<Option<i32>>>,
+) {
     let start_button = document.get_element_by_id("startgame").unwrap();
-    start_button.set_attribute("style", "display: none;").unwrap();
+    start_button
+        .set_attribute("style", "display: none;")
+        .unwrap();
 
     let game_container = document.get_element_by_id("game").unwrap();
-    game_container.set_attribute("style", "display: block;").unwrap();
+    game_container
+        .set_attribute("style", "display: block;")
+        .unwrap();
 
     let answer_box_container = document.get_element_by_id("answerBoxContainer").unwrap();
-    answer_box_container.set_attribute("style", "display: block;").unwrap();
+    answer_box_container
+        .set_attribute("style", "display: block;")
+        .unwrap();
 
     let answer_box_container = document.get_element_by_id("endgame").unwrap();
-    answer_box_container.set_attribute("style", "display: none;").unwrap();
+    answer_box_container
+        .set_attribute("style", "display: none;")
+        .unwrap();
 
     start_timer(document, timer_id).unwrap();
 
@@ -45,10 +42,16 @@ pub fn start_game(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_id
     result.set_text_content(None);
 
     let input_element = document.get_element_by_id("inputNumber").unwrap();
-    input_element.dyn_ref::<HtmlInputElement>().unwrap().set_value("");
+    input_element
+        .dyn_ref::<HtmlInputElement>()
+        .unwrap()
+        .set_value("");
 
     let answer_box = document.get_element_by_id("answerBox").unwrap();
-    answer_box.dyn_ref::<HtmlInputElement>().unwrap().set_value("");
+    answer_box
+        .dyn_ref::<HtmlInputElement>()
+        .unwrap()
+        .set_value("");
 
     *secret_value.borrow_mut() = generate_random_number() % 100 + 1;
 }
@@ -102,7 +105,11 @@ pub fn increase_number_of_attempts(input: &str) -> String {
     format!("number of attempts: {}", number_of_attempts + 1)
 }
 
-pub fn check_answer(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_id: &Rc<RefCell<Option<i32>>>) {
+pub fn check_answer(
+    document: &Document,
+    secret_value: &Rc<RefCell<u32>>,
+    timer_id: &Rc<RefCell<Option<i32>>>,
+) {
     let answer_box = document.get_element_by_id("answerBox").unwrap();
     let answer = answer_box.dyn_ref::<HtmlInputElement>().unwrap().value();
     let answer: u32 = answer.parse().unwrap_or(0);
@@ -118,33 +125,43 @@ pub fn check_answer(document: &Document, secret_value: &Rc<RefCell<u32>>, timer_
 
 fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>) {
     let game_container = document.get_element_by_id("game").unwrap();
-    game_container.set_attribute("style", "display: none;").unwrap();
+    game_container
+        .set_attribute("style", "display: none;")
+        .unwrap();
 
     let answer_box_container = document.get_element_by_id("answerBoxContainer").unwrap();
-    answer_box_container.set_attribute("style", "display: none;").unwrap();
+    answer_box_container
+        .set_attribute("style", "display: none;")
+        .unwrap();
 
     stop_timer(timer_id);
 
     let end_game_div = document.get_element_by_id("endgame").unwrap();
-    end_game_div.set_attribute("style", "display: block;").unwrap();
+    end_game_div
+        .set_attribute("style", "display: block;")
+        .unwrap();
 
-    let timer_element_text = document.get_element_by_id("timerDisplay").unwrap().text_content().unwrap();
+    let timer_element_text = document
+        .get_element_by_id("timerDisplay")
+        .unwrap()
+        .text_content()
+        .unwrap();
     let total_seconds = get_number_of_seconds(&timer_element_text);
     let total_time_info = document.get_element_by_id("totaltime").unwrap();
     total_time_info.set_text_content(Some(&format!("Total time: {} seconds", total_seconds)));
 
-
-    let number_of_attempts = document.get_element_by_id("attemptsDisplay").unwrap().text_content().unwrap();
+    let number_of_attempts = document
+        .get_element_by_id("attemptsDisplay")
+        .unwrap()
+        .text_content()
+        .unwrap();
     let total_trials_info = document.get_element_by_id("totaltrials").unwrap();
     total_trials_info.set_text_content(Some(&format!("Total {}", number_of_attempts)));
 }
 
 pub fn get_number_of_seconds(timer_text: &str) -> u32 {
     let parts: Vec<&str> = timer_text.split(" ").collect();
-    match parts[1].parse::<u32>() {
-        Ok(seconds) => seconds,
-        Err(_) => 42,
-    }
+    parts[1].parse::<u32>().unwrap_or(42)
 }
 
 fn stop_timer(timer_id: &Rc<RefCell<Option<i32>>>) {

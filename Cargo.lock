@@ -254,6 +254,7 @@ version = "0.0.0"
 dependencies = [
  "getrandom",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "web-sys",
 ]
