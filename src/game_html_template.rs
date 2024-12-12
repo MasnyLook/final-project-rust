@@ -1,7 +1,6 @@
-use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-use web_sys::{Document, Element, HtmlInputElement};
+use web_sys::{Document, Element};
 
 use crate::game_abstract_class::Game;
 
@@ -24,7 +23,7 @@ pub fn create_startgame_div(document: &Document, game: &Rc<dyn Game>) -> Result<
 
     card.append_child(&card_body)?;
     startgame.append_child(&card)?;
-    
+
     let start_button = document.create_element("button")?;
     start_button.set_attribute("id", "startButton")?;
     start_button.set_text_content(Some("Start"));
@@ -36,7 +35,10 @@ pub fn create_startgame_div(document: &Document, game: &Rc<dyn Game>) -> Result<
 
 pub fn create_endgame_div(document: &Document) -> Result<Element, JsValue> {
     let endgame_container = document.create_element("div")?;
-    endgame_container.set_attribute("class", "d-flex justify-content-center align-items-center vh-100")?;
+    endgame_container.set_attribute(
+        "class",
+        "d-flex justify-content-center align-items-center vh-100",
+    )?;
 
     let endgame = document.create_element("div")?;
     endgame.set_attribute("id", "endgame")?;
@@ -134,7 +136,8 @@ pub fn create_game_template(document: &Document, game: &Rc<dyn Game>) -> Result<
 pub fn create_answer_box(document: &Document) -> Result<Element, JsValue> {
     let answer_box_container = document.create_element("div")?;
     answer_box_container.set_attribute("id", "answerBoxContainer")?;
-    answer_box_container.set_attribute("class", "mt-4 text-center fixed-bottom bg-dark text-white")?;
+    answer_box_container
+        .set_attribute("class", "mt-4 text-center fixed-bottom bg-dark text-white")?;
 
     let answer_box = document.create_element("input")?;
     answer_box.set_attribute("type", "number")?;

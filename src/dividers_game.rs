@@ -1,9 +1,9 @@
 use crate::game_abstract_class::Game;
 
-pub struct Game_dividers;
+pub struct GameDividers;
 
-impl Game for Game_dividers {
-    fn compute_function (&self, input_value : u32, secret_value : u32) -> u32 {
+impl Game for GameDividers {
+    fn compute_function(&self, input_value: u32, secret_value: u32) -> u32 {
         _dividers(input_value, secret_value)
     }
 
@@ -16,7 +16,7 @@ impl Game for Game_dividers {
     }
 }
 
-fn _dividers(x : u32, y : u32) -> u32 {
+fn _dividers(x: u32, y: u32) -> u32 {
     let value = x + y;
     let mut counter = 0;
     let mut i = 1;

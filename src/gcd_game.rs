@@ -1,9 +1,9 @@
 use crate::game_abstract_class::Game;
 
-pub struct Game_gcd;
+pub struct GameGcd;
 
-impl Game for Game_gcd {
-    fn compute_function (&self, input_value : u32, secret_value : u32) -> u32 {
+impl Game for GameGcd {
+    fn compute_function(&self, input_value: u32, secret_value: u32) -> u32 {
         _gcd(input_value, secret_value)
     }
 
@@ -16,7 +16,7 @@ impl Game for Game_gcd {
     }
 }
 
-fn _gcd(x : u32, y : u32) -> u32 {
+fn _gcd(x: u32, y: u32) -> u32 {
     if x < y {
         return _gcd(y, x);
     }
