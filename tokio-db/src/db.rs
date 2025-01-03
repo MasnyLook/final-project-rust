@@ -96,7 +96,7 @@ impl Database {
             return Err(anyhow::anyhow!("Unauthorized"));
         }
         self.client.execute(
-            "INSERT INTO scores (user_id, score_time, score_moves, game_type, timestamp) 
+            "INSERT INTO scores (user_name, score_time, score_moves, game_type, timestamp) 
             VALUES ($1, $2, $3, $4, $5)",
             &[&result.user_name, &result.score_time, &result.score_moves, &result.game_type, &result.timestamp],
         ).await?;

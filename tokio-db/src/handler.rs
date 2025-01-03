@@ -13,6 +13,10 @@ use actix_web::{
 use serde::{Serialize, Deserialize};
 // use derive_more::{Display};
 use crate::request::{Response, ServerTokenResponse, AccountData};
+use crate::models::GameResult;
+use crate::request::GameResultData;
+use chrono::{DateTime, Utc};
+use std::time::SystemTime;
 
 #[get("/hello")]
 async fn hello(
@@ -50,21 +54,23 @@ async fn login(
     }
 }
 
-#[put("/game_result")]
+#[post("/game_result")]
 async fn game_result( // consider name change
     db: Data<Database>,
     game_data: Json<GameResultData>
-) { // not sure if i want to return sth here
+) -> Result<HttpResponse, actix_web::Error> { // not sure if i want to return sth here
     let token = game_data.token.clone();
+    let datetime = DateTime::parse_from_rfc3339(&game_data.timestamp).expect("Invalid date format");
+    let system_time = SystemTime::from(datetime);
     let game_result = GameResult::new (
-        token.name.clone(),
+        token.user_name.clone(),
         game_data.score_time.clone(),
         game_data.score_moves.clone(),
         game_data.game_type.clone(),
-        game_data.timestamp.clone()
+        system_time
     );
-
     db.save_game_result(&game_result, &token).await; // void function i guess
+    Ok(HttpResponse::Ok().finish())
 }
 
 // leaderboard after merge frontend and backend :))

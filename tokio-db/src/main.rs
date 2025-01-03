@@ -5,6 +5,7 @@ mod request;
 
 use tokio_postgres::{NoTls, Client};
 use anyhow::{Context, Error};
+use chrono::{DateTime, Utc};
 
 use crate::models::{AuthenticationToken, GameResult};
 use crate::db::Database;
@@ -14,6 +15,7 @@ use crate::handler::{
 };
 use actix_web::{HttpServer, App, web::Data, middleware::Logger};
 use env_logger::Env;
+use std::time::SystemTime;
 
 async fn setup_database() -> Result<Client, Error> {
     // Połącz się z bazą danych
@@ -67,6 +69,7 @@ async fn main() -> Result<(), Error> {
             .app_data(db_data.clone())
             .service(create_account)
             .service(login)
+            .service(handler::game_result)
     })
     .bind(("127.0.0.1", 8006))?
     .run()
@@ -90,3 +93,24 @@ async fn main() -> Result<(), Error> {
 
     //     println!("Found user: {} - {} - {}", id, name, email);
     // }
+
+
+
+    // // create game result
+    // let datetime_str = "2021-06-01T00:00:00Z";
+    // let datetime = DateTime::parse_from_rfc3339(datetime_str).expect("Invalid date format");
+    // let system_time = SystemTime::from(datetime);
+    // let game_result = GameResult::new(
+    //     "pablo".to_string(),
+    //     100,
+    //     100,
+    //     "test".to_string(),
+    //     system_time
+    // );
+
+    // // save game result
+    // client.execute(
+    //     "INSERT INTO scores (user_name, score_time, score_moves, game_type, timestamp) 
+    //     VALUES ($1, $2, $3, $4, $5)",
+    //     &[&game_result.user_name, &game_result.score_time, &game_result.score_moves, &game_result.game_type, &game_result.timestamp],
+    // ).await?;
