@@ -13,7 +13,7 @@ use actix_web::{
 use serde::{Serialize, Deserialize};
 // use derive_more::{Display};
 use crate::request::{Response, ServerTokenResponse, AccountData};
-use crate::models::GameResult;
+use crate::models::{GameResult, AuthenticationToken};
 use crate::request::GameResultData;
 use chrono::{DateTime, Utc};
 use std::time::SystemTime;
@@ -47,6 +47,7 @@ async fn login(
 ) -> Result<Json<ServerTokenResponse>, actix_web::Error> {
     let name = request_data.name.clone();
     let password = request_data.password.clone();
+    println!("name: {}, password: {}", name, password); // TO remove
 
     match db.authenticate_user(&name, &password).await {
         Ok(token) => Ok(Json(ServerTokenResponse {is_authenticated: true, token: token.cookie})),
@@ -62,6 +63,7 @@ async fn game_result( // consider name change
     let token = game_data.token.clone();
     let datetime = DateTime::parse_from_rfc3339(&game_data.timestamp).expect("Invalid date format");
     let system_time = SystemTime::from(datetime);
+    println!("{:#?}", game_data); // remove later
     let game_result = GameResult::new (
         token.user_name.clone(),
         game_data.score_time.clone(),
@@ -73,5 +75,26 @@ async fn game_result( // consider name change
     Ok(HttpResponse::Ok().finish())
 }
 
-// leaderboard after merge frontend and backend :))
-// test fetching result data after that
+// #[get("/leaderboard")]
+// async fn leaderboard(
+//     db: Data<Database>
+// ) -> Result<HttpResponse, actix_web::Error> {
+//     let leaderboard = db.get_leaderboard().await;
+//     let response = serde_json::to_string(&leaderboard).unwrap();
+//     Ok(HttpResponse::Ok()
+//         .content_type("application/json")
+//         .body(response))
+// }
+
+#[post("/user_board")]
+async fn user_board(
+    db: Data<Database>,
+    request_data: Json<AuthenticationToken>
+) -> Result<HttpResponse, actix_web::Error> {
+    match db.get_user_results(&request_data).await {
+        Ok(user_board) => Ok(HttpResponse::Ok()
+            .content_type("application/json")
+            .body(serde_json::to_string(&user_board).unwrap())),
+        Err(_) => Ok(HttpResponse::Ok().finish())
+    }
+}

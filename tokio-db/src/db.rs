@@ -124,16 +124,16 @@ impl Database {
         Ok(results)
     }
 
-    pub async fn get_user_results(&self, token: &AuthenticationToken, game_type: &str) -> Result<Vec<GameResult>, Error> {
+    pub async fn get_user_results(&self, token: &AuthenticationToken) -> Result<Vec<GameResult>, Error> {
         if !self.authorize_connection(token) {
             return Err(anyhow::anyhow!("Unauthorized"));
         }
         let rows = self.client.query(
             "SELECT * FROM scores 
-            WHERE user_name = ($1) AND game_type = ($2) 
-            ORDER BY timestamp ASC
+            WHERE user_name = ($1)
+            ORDER BY timestamp DESC
             LIMIT 10",
-            &[&token.user_name, &game_type],
+            &[&token.user_name],
         ).await?;
         let mut results = Vec::new();
         for row in rows {
