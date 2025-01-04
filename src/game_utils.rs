@@ -1,9 +1,14 @@
 use wasm_bindgen::prelude::*;
-
+use chrono::prelude::*;
 use getrandom::getrandom;
 use std::cell::RefCell;
 use std::rc::Rc;
 use web_sys::{Document, HtmlInputElement};
+use serde::{Serialize, Deserialize};
+use serde_json::json;
+use reqwest::Client;
+use reqwest::header;
+use wasm_bindgen_futures::spawn_local;
 
 pub fn start_game(
     document: &Document,
@@ -109,6 +114,7 @@ pub fn check_answer(
     document: &Document,
     secret_value: &Rc<RefCell<u32>>,
     timer_id: &Rc<RefCell<Option<i32>>>,
+    window: &web_sys::Window,
 ) {
     let answer_box = document.get_element_by_id("answerBox").unwrap();
     let answer = answer_box.dyn_ref::<HtmlInputElement>().unwrap().value();
@@ -116,14 +122,14 @@ pub fn check_answer(
 
     let secret_value = *secret_value.borrow();
     if answer == secret_value {
-        finish_game(document, timer_id);
+        finish_game(document, timer_id, window);
     } else {
         let result = document.get_element_by_id("answerResult").unwrap();
         result.set_text_content(Some("Try again!"));
     }
 }
 
-fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>) {
+fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window: &web_sys::Window) {
     let game_container = document.get_element_by_id("game").unwrap();
     game_container
         .set_attribute("style", "display: none;")
@@ -155,13 +161,85 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>) {
         .unwrap()
         .text_content()
         .unwrap();
+    let total_attempts: u32 = get_number_of_attempts(&number_of_attempts);
     let total_trials_info = document.get_element_by_id("totaltrials").unwrap();
     total_trials_info.set_text_content(Some(&format!("Total {}", number_of_attempts)));
+
+    send_game_results_to_server(window, total_seconds, total_attempts, document);
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+struct AuthenticationToken {
+    pub user_name: String,
+    pub cookie: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct GameResult {
+    pub token: AuthenticationToken,
+    pub score_time: i32, // can't put u32 in postgresql database
+    pub score_moves: i32,
+    pub game_type: String,
+    pub timestamp: String,
+}
+
+fn send_game_results_to_server(window: &web_sys::Window, total_seconds: u32, total_attempts: u32, document: &Document) {
+    let storage = window.local_storage().unwrap().unwrap();
+    let token = storage.get_item("token").unwrap().unwrap();
+    let name = storage.get_item("name").unwrap().unwrap();
+
+    let button = document.get_element_by_id("click").unwrap();
+    let button_text = button.text_content().unwrap();
+    let now = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
+
+    let game_result = GameResult {
+        token: AuthenticationToken {
+            user_name: name,
+            cookie: token,
+        },
+        score_time: total_seconds as i32,
+        score_moves: total_attempts as i32,
+        game_type: button_text,
+        timestamp: now,
+    };
+
+    let request_body = serde_json::to_string(&game_result).unwrap();
+    send_message_to_server(window, &request_body);
+}
+
+fn send_message_to_server(window: &web_sys::Window, message: &str) {
+    let storage = window.local_storage().unwrap().unwrap();
+    let client = Client::new();
+    let mut headers = header::HeaderMap::new();
+    headers.insert("Content-Type", "application/json".parse().unwrap());
+    let window_clone = window.clone();
+    let request_body = message.to_string();
+
+    spawn_local(async move {
+        let response = client
+            .post("http://127.0.0.1:8006/game_result")
+            .headers(headers)
+            .body(request_body)
+            .send()
+            .await;            
+    });
 }
 
 pub fn get_number_of_seconds(timer_text: &str) -> u32 {
     let parts: Vec<&str> = timer_text.split(" ").collect();
     parts[1].parse::<u32>().unwrap_or(42)
+}
+
+fn get_number_of_attempts(attempts_info: &str) -> u32 {
+    // attempts_info of the form
+    // number of attempts: <number>
+    let parts: Vec<&str> = attempts_info.split(": ").collect();
+    if let Some(number_str) = parts.get(1) {
+        if let Ok(number) = number_str.parse::<u32>() {
+            return number;
+        }
+    }
+    1000
 }
 
 fn stop_timer(timer_id: &Rc<RefCell<Option<i32>>>) {

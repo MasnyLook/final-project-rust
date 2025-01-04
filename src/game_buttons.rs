@@ -78,12 +78,14 @@ pub fn setup_answer_button(
     document: &Document,
     secret_value: &Rc<RefCell<u32>>,
     timer_id: &Rc<RefCell<Option<i32>>>,
+    window: &web_sys::Window,
 ) {
     let document_clone = document.clone();
     let secret_value_clone = Rc::clone(secret_value);
     let timer_id_clone = Rc::clone(timer_id);
+    let window_clone = window.clone();
     let closure = Closure::wrap(Box::new(move || {
-        game_utils::check_answer(&document_clone, &secret_value_clone, &timer_id_clone);
+        game_utils::check_answer(&document_clone, &secret_value_clone, &timer_id_clone, &window_clone);
     }) as Box<dyn FnMut()>);
 
     let submit_button = document.get_element_by_id("submitButton").unwrap();

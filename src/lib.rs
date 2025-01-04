@@ -78,7 +78,7 @@ fn initialize_game(
 
     game_buttons::setup_start_button(document, &secret_value, &timer_id);
     game_buttons::setup_click_button(document, &secret_value, window, game);
-    game_buttons::setup_answer_button(document, &secret_value, &timer_id);
+    game_buttons::setup_answer_button(document, &secret_value, &timer_id, &window);
     game_buttons::setup_restart_button(document, &secret_value, &timer_id);
     game_buttons::setup_reroll_button(document, &secret_value);
 }
