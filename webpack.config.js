@@ -39,6 +39,7 @@ module.exports = {
         historyApiFallback: {
             rewrites: [
                 { from: /^\/dividers$/, to: '/index.html' },
+                { from: /^\/account.html$/, to: '/main.html'},
             ]
         }
     }

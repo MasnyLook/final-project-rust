@@ -14,10 +14,15 @@ crate-type = ["cdylib", "rlib"]
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 getrandom = { version = "0.2", features = ["js"] }
+js-sys = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+
 
 [dependencies.web-sys]
-version = "0.3"
-features = ['Document', 'Element', 'HtmlElement', 'HtmlInputElement' ,'Node', 'Window', 'Request', 'Response', 'console']
+version = "0.3.76"
+features = ['Document', 'Element', 'HtmlElement', 'HtmlInputElement' ,'Node', 'Window', 'Location', 'Request', 'Response', 'console', 'Event', 'RequestInit', 'Headers', 'Storage', 'RequestCredentials', 'RequestMode', 'HtmlFormElement']
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

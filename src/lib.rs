@@ -5,6 +5,7 @@ mod game_html_template;
 pub mod game_utils;
 pub mod gcd_game;
 mod mainpage_html;
+mod account_html;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -21,6 +22,8 @@ pub fn main(pathname: String) -> Result<(), JsValue> {
     let document = window.document().expect("should have a document on window");
     let body = document.body().expect("document should have a body");
 
+    create_account_tab(&document, &body);
+
     if pathname.ends_with("index.html") {
         let game: Rc<dyn Game> = Rc::new(GameGcd);
         initialize_game(&document, &body, &window, &game);
@@ -29,6 +32,24 @@ pub fn main(pathname: String) -> Result<(), JsValue> {
     } else if pathname.ends_with("dividers") {
         let game: Rc<dyn Game> = Rc::new(GameDividers);
         initialize_game(&document, &body, &window, &game);
+    } else if pathname.ends_with("account.html") {
+        let storage = window.local_storage().unwrap().unwrap();
+        match storage.get_item("token") {
+            Ok(Some(token)) => {
+                account_html::create_account_page(&document, &body);
+            }
+            Ok(None) => {
+                account_html::create_login_form(&document, &body);
+                account_html::setup_restart_button(&document, &body, &window);
+                account_html::ssetup_login_form(&document, &body, &window);
+            }
+            Err(_) => {
+                account_html::create_login_form(&document, &body);
+                account_html::setup_restart_button(&document, &body, &window);
+                account_html::ssetup_login_form(&document, &body, &window);
+            }
+        }
+        account_html::go_back_to_main_page(&document, &body);
     }
 
     Ok(())
@@ -60,4 +81,16 @@ fn initialize_game(
     game_buttons::setup_answer_button(document, &secret_value, &timer_id);
     game_buttons::setup_restart_button(document, &secret_value, &timer_id);
     game_buttons::setup_reroll_button(document, &secret_value);
+}
+
+fn create_account_tab(
+    document: &Document,
+    body: &Element
+) {
+    let account_link = document.create_element("a").unwrap();
+    account_link.set_attribute("id", "account-link").unwrap();
+    account_link.set_attribute("href", "/account.html").unwrap();
+    account_link.set_inner_html("Moje Konto");
+    account_link.set_attribute("style", "position: absolute; top: 10px; right: 10px; display: block;").unwrap();
+    body.append_child(&account_link).unwrap();
 }

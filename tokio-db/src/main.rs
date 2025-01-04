@@ -14,8 +14,11 @@ use crate::handler::{
     login,
 };
 use actix_web::{HttpServer, App, web::Data, middleware::Logger};
+use actix_cors::Cors;
 use env_logger::Env;
 use std::time::SystemTime;
+use std::result::Result;
+
 
 async fn setup_database() -> Result<Client, Error> {
     // Połącz się z bazą danych
@@ -64,8 +67,14 @@ async fn main() -> Result<(), Error> {
     );
     HttpServer::new(move || {
         let logger = Logger::default();
+        let cors = Cors::default()
+            .allowed_origin("http://localhost:8080")
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![actix_web::http::header::CONTENT_TYPE])
+            .max_age(3600);
         App::new()
             .wrap(logger)
+            .wrap(cors)
             .app_data(db_data.clone())
             .service(create_account)
             .service(login)
