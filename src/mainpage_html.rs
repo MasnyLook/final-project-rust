@@ -1,4 +1,5 @@
 use web_sys::{Document, Element};
+use crate::fetch_history;
 
 pub fn create_main_page(document: &Document, body: &Element) {
     let main_page = document.create_element("div").unwrap();
@@ -38,5 +39,11 @@ pub fn create_main_page(document: &Document, body: &Element) {
     }
 
     main_page.append_child(&games_list).unwrap();
+
+    let footer = document.create_element("div").unwrap();
+    footer.set_attribute("style", "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 10px;").unwrap();
+    fetch_history::fetch_leaderboard(document, &footer);
+
+    body.append_child(&footer).unwrap();
     body.append_child(&main_page).unwrap();
 }

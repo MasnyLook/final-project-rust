@@ -75,16 +75,21 @@ async fn game_result( // consider name change
     Ok(HttpResponse::Ok().finish())
 }
 
-// #[get("/leaderboard")]
-// async fn leaderboard(
-//     db: Data<Database>
-// ) -> Result<HttpResponse, actix_web::Error> {
-//     let leaderboard = db.get_leaderboard().await;
-//     let response = serde_json::to_string(&leaderboard).unwrap();
-//     Ok(HttpResponse::Ok()
-//         .content_type("application/json")
-//         .body(response))
-// }
+#[get("/leaderboard")]
+async fn leaderboard(
+    db: Data<Database>
+) -> Result<HttpResponse, actix_web::Error> {
+    let leaderboard = db.get_leaderboard().await;
+    match leaderboard {
+        Ok(leaderboard) => {
+            let response = serde_json::to_string(&leaderboard).unwrap();
+            Ok(HttpResponse::Ok()
+                .content_type("application/json")
+                .body(response))
+        },
+        Err(_) => Ok(HttpResponse::Ok().finish())
+    }
+}
 
 #[post("/user_board")]
 async fn user_board(

@@ -103,6 +103,27 @@ impl Database {
         Ok(())
     }
 
+    pub async fn get_leaderboard(&self) -> Result<Vec<GameResult>, Error> {
+        let rows = self.client.query(
+            "SELECT * FROM scores 
+            ORDER BY score_moves ASC, score_time ASC, timestamp ASC
+            LIMIT 5",
+            &[],
+        ).await?;
+        let mut leaderboard = Vec::new();
+        for row in rows {
+            let game_result = GameResult {
+                user_name: row.get(1),
+                score_time: row.get(2),
+                score_moves: row.get(3),
+                game_type: row.get(4),
+                timestamp: row.get(5),
+            };
+            leaderboard.push(game_result);
+        }
+        Ok(leaderboard)
+    }
+
     pub async fn get_top10_results(&self, game_type: &str) -> Result<Vec<GameResult>, Error> {
         let rows = self.client.query(
             "SELECT * FROM scores 

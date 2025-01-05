@@ -23,7 +23,36 @@ pub fn fetch_user_board(
                 let results = parse_output_data(&data);
                 match results {
                     Ok(game_results) => {
-                        create_table_from_results(&document_clone, &body_clone, game_results);
+                        create_table_from_results(&document_clone, &body_clone, game_results, false);
+                    }
+                    Err(err) => {
+                        web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
+                    }
+                }
+            }
+            Err(err) => {
+                web_sys::console::log_1(&format!("Request error: {:?}", err).into());
+            }
+        }
+    });
+}
+
+pub fn fetch_leaderboard(
+    document: &Document,
+    body: &Element,
+) {
+    let window = web_sys::window().unwrap();
+    let document_clone = document.clone();
+    let window_clone = window.clone();
+    let body_clone = body.clone();
+    spawn_local(async move {
+        let response = send_getmessage_to_server(&window_clone).await;
+        match response {
+            Ok(data) => {
+                let results = parse_output_data(&data);
+                match results {
+                    Ok(game_results) => {
+                        create_table_from_results(&document_clone, &body_clone, game_results, true);
                     }
                     Err(err) => {
                         web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
@@ -72,24 +101,45 @@ async fn send_message_to_server(window: &web_sys::Window, message: &str) -> Resu
     Ok(text)
 }
 
+async fn send_getmessage_to_server(window: &web_sys::Window) -> Result<String, reqwest::Error>  {
+    let client = Client::new();
+
+    let response = client
+        .get("http://127.0.0.1:8006/leaderboard")
+        .send()
+        .await?;
+            
+    let text = response.text().await?;
+    web_sys::console::log_1(&JsValue::from_str(&text));
+
+    Ok(text)
+}
+
 fn parse_output_data(data: &str) -> Result<Vec<models::GameResult>, serde_json::Error> {
     let game_results: Vec<models::GameResult> = serde_json::from_str(data)?;
     Ok(game_results)
 }
 
-pub fn create_table_from_results(document: &Document, body: &Element, results: Vec<models::GameResult>) {
+pub fn create_table_from_results(document: &Document, body: &Element, results: Vec<models::GameResult>, is_username: bool) {
     let table = document.create_element("table").unwrap();
     table.set_attribute("class", "table table-striped").unwrap();
     table.set_attribute("style", "width: auto; margin: 0 auto; border: 1px solid grey;");
 
     let caption = document.create_element("caption").unwrap();
-    caption.set_text_content(Some("History of Game Results"));
+    if is_username {
+        caption.set_text_content(Some("Leaderboard"));
+    } else {
+        caption.set_text_content(Some("History of Game Results"));
+    }
     caption.set_attribute("style", "caption-side: top; font-size: 24px; font-weight: bold; margin-bottom: 10px;").unwrap();
     table.append_child(&caption).unwrap();
 
     let thead = document.create_element("thead").unwrap();
     let header_row = document.create_element("tr").unwrap();
-    let headers = vec!["Time(sec)", "Moves", "Game Type", "Timestamp"];
+    let mut headers = vec!["Time(sec)", "Moves", "Game Type", "Timestamp"];
+    if is_username {
+        headers.insert(0, "Nick");
+    }
     for header in headers {
         let th = document.create_element("th").unwrap();
         th.set_text_content(Some(header));
@@ -103,6 +153,12 @@ pub fn create_table_from_results(document: &Document, body: &Element, results: V
     for result in results {
         let row = document.create_element("tr").unwrap();
         row.set_attribute("style", "color: white; text-align: center;").unwrap();
+
+        if is_username {
+            let username_cell = document.create_element("td").unwrap();
+            username_cell.set_text_content(Some(&result.user_name));
+            row.append_child(&username_cell).unwrap();
+        }
 
         let score_time_cell = document.create_element("td").unwrap();
         score_time_cell.set_text_content(Some(&result.score_time.to_string()));

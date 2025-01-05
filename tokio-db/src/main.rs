@@ -80,6 +80,7 @@ async fn main() -> Result<(), Error> {
             .service(login)
             .service(handler::game_result)
             .service(handler::user_board)
+            .service(handler::leaderboard)
     })
     .bind(("127.0.0.1", 8006))?
     .run()
