@@ -7,6 +7,7 @@ pub mod gcd_game;
 mod mainpage_html;
 mod account_html;
 pub mod models;
+mod fetch_history;
 
 use std::cell::RefCell;
 use std::rc::Rc;

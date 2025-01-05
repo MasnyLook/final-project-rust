@@ -20,3 +20,12 @@ pub struct GameResult {
     pub game_type: String,
     pub timestamp: Timestamp,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct GameResultBody {
+    pub token: AuthenticationToken,
+    pub score_time: i32, // can't put u32 in postgresql database
+    pub score_moves: i32,
+    pub game_type: String,
+    pub timestamp: String,
+}

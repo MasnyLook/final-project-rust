@@ -8,6 +8,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use serde::{Deserialize, Serialize};
 use crate::models;
+use crate::fetch_history;
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 use reqwest::Client;
@@ -226,7 +227,7 @@ pub fn ssetup_login_form(
 }
 
 pub fn create_account_page(document: &Document, body: &Element) {
-    fetch_user_board(document, body);
+    fetch_history::fetch_user_board(document, body);
 
     let logout_button = document.create_element("button").unwrap();
     logout_button.set_attribute("id", "logoutButton").unwrap();
@@ -255,131 +256,131 @@ pub fn create_account_page(document: &Document, body: &Element) {
     closure.forget();
 }
 
-fn fetch_user_board(
-    document: &Document,
-    body: &Element,
-) {
-    let window = web_sys::window().unwrap();
-    let message = prepare_request_body(&window);
-    let document_clone = document.clone();
-    let window_clone = window.clone();
-    let body_clone = body.clone();
-    spawn_local(async move {
-        let response = send_message_to_server(&window_clone, &message).await;
-        match response {
-            Ok(data) => {
-                let results = parse_output_data(&data);
-                match results {
-                    Ok(game_results) => {
-                        create_table_from_results(&document_clone, &body_clone, game_results);
-                    }
-                    Err(err) => {
-                        web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
-                    }
-                }
-            }
-            Err(err) => {
-                web_sys::console::log_1(&format!("Request error: {:?}", err).into());
-            }
-        }
-    });
-}
+// fn fetch_user_board(
+//     document: &Document,
+//     body: &Element,
+// ) {
+//     let window = web_sys::window().unwrap();
+//     let message = prepare_request_body(&window);
+//     let document_clone = document.clone();
+//     let window_clone = window.clone();
+//     let body_clone = body.clone();
+//     spawn_local(async move {
+//         let response = send_message_to_server(&window_clone, &message).await;
+//         match response {
+//             Ok(data) => {
+//                 let results = parse_output_data(&data);
+//                 match results {
+//                     Ok(game_results) => {
+//                         create_table_from_results(&document_clone, &body_clone, game_results);
+//                     }
+//                     Err(err) => {
+//                         web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
+//                     }
+//                 }
+//             }
+//             Err(err) => {
+//                 web_sys::console::log_1(&format!("Request error: {:?}", err).into());
+//             }
+//         }
+//     });
+// }
 
-fn prepare_request_body (
-    window: &web_sys::Window,
-) -> String {
-    let storage = window.local_storage().unwrap().unwrap();
-    let token = storage.get_item("token").unwrap().unwrap();
-    let name = storage.get_item("name").unwrap().unwrap();
-    let auth_token = models::AuthenticationToken {
-        user_name: name,
-        cookie: token,
-    };
-    let request_body = serde_json::to_string(&auth_token).unwrap();
-    web_sys::console::log_1(&JsValue::from_str(&request_body));
-    request_body
-}
+// fn prepare_request_body (
+//     window: &web_sys::Window,
+// ) -> String {
+//     let storage = window.local_storage().unwrap().unwrap();
+//     let token = storage.get_item("token").unwrap().unwrap();
+//     let name = storage.get_item("name").unwrap().unwrap();
+//     let auth_token = models::AuthenticationToken {
+//         user_name: name,
+//         cookie: token,
+//     };
+//     let request_body = serde_json::to_string(&auth_token).unwrap();
+//     web_sys::console::log_1(&JsValue::from_str(&request_body));
+//     request_body
+// }
 
-async fn send_message_to_server(window: &web_sys::Window, message: &str) -> Result<String, reqwest::Error>  {
-    let client = Client::new();
-    let mut headers = header::HeaderMap::new();
-    headers.insert("Content-Type", "application/json".parse().unwrap());
-    let request_body = message.to_string();
+// async fn send_message_to_server(window: &web_sys::Window, message: &str) -> Result<String, reqwest::Error>  {
+//     let client = Client::new();
+//     let mut headers = header::HeaderMap::new();
+//     headers.insert("Content-Type", "application/json".parse().unwrap());
+//     let request_body = message.to_string();
 
-    let response = client
-        .post("http://127.0.0.1:8006/user_board")
-        .headers(headers)
-        .body(request_body)
-        .send()
-        .await?;
+//     let response = client
+//         .post("http://127.0.0.1:8006/user_board")
+//         .headers(headers)
+//         .body(request_body)
+//         .send()
+//         .await?;
             
-    let text = response.text().await?;
-    web_sys::console::log_1(&JsValue::from_str(&text));
+//     let text = response.text().await?;
+//     web_sys::console::log_1(&JsValue::from_str(&text));
 
-    Ok(text)
-}
+//     Ok(text)
+// }
 
-fn parse_output_data(data: &str) -> Result<Vec<models::GameResult>, serde_json::Error> {
-    let game_results: Vec<models::GameResult> = serde_json::from_str(data)?;
-    Ok(game_results)
-}
+// fn parse_output_data(data: &str) -> Result<Vec<models::GameResult>, serde_json::Error> {
+//     let game_results: Vec<models::GameResult> = serde_json::from_str(data)?;
+//     Ok(game_results)
+// }
 
-pub fn create_table_from_results(document: &Document, body: &Element, results: Vec<models::GameResult>) {
-    let table = document.create_element("table").unwrap();
-    table.set_attribute("class", "table table-striped").unwrap();
-    table.set_attribute("style", "width: auto; margin: 0 auto; border: 1px solid grey;");
+// pub fn create_table_from_results(document: &Document, body: &Element, results: Vec<models::GameResult>) {
+//     let table = document.create_element("table").unwrap();
+//     table.set_attribute("class", "table table-striped").unwrap();
+//     table.set_attribute("style", "width: auto; margin: 0 auto; border: 1px solid grey;");
 
-    let caption = document.create_element("caption").unwrap();
-    caption.set_text_content(Some("History of Game Results"));
-    caption.set_attribute("style", "caption-side: top; font-size: 24px; font-weight: bold; margin-bottom: 10px;").unwrap();
-    table.append_child(&caption).unwrap();
+//     let caption = document.create_element("caption").unwrap();
+//     caption.set_text_content(Some("History of Game Results"));
+//     caption.set_attribute("style", "caption-side: top; font-size: 24px; font-weight: bold; margin-bottom: 10px;").unwrap();
+//     table.append_child(&caption).unwrap();
 
-    let thead = document.create_element("thead").unwrap();
-    let header_row = document.create_element("tr").unwrap();
-    let headers = vec!["Time(sec)", "Moves", "Game Type", "Timestamp"];
-    for header in headers {
-        let th = document.create_element("th").unwrap();
-        th.set_text_content(Some(header));
-        th.set_attribute("style", "color: lightblue; text-align: center;").unwrap();
-        header_row.append_child(&th).unwrap();
-    }
-    thead.append_child(&header_row).unwrap();
-    table.append_child(&thead).unwrap();
+//     let thead = document.create_element("thead").unwrap();
+//     let header_row = document.create_element("tr").unwrap();
+//     let headers = vec!["Time(sec)", "Moves", "Game Type", "Timestamp"];
+//     for header in headers {
+//         let th = document.create_element("th").unwrap();
+//         th.set_text_content(Some(header));
+//         th.set_attribute("style", "color: lightblue; text-align: center;").unwrap();
+//         header_row.append_child(&th).unwrap();
+//     }
+//     thead.append_child(&header_row).unwrap();
+//     table.append_child(&thead).unwrap();
 
-    let tbody = document.create_element("tbody").unwrap();
-    for result in results {
-        let row = document.create_element("tr").unwrap();
-        row.set_attribute("style", "color: white; text-align: center;").unwrap();
+//     let tbody = document.create_element("tbody").unwrap();
+//     for result in results {
+//         let row = document.create_element("tr").unwrap();
+//         row.set_attribute("style", "color: white; text-align: center;").unwrap();
 
-        let score_time_cell = document.create_element("td").unwrap();
-        score_time_cell.set_text_content(Some(&result.score_time.to_string()));
-        row.append_child(&score_time_cell).unwrap();
+//         let score_time_cell = document.create_element("td").unwrap();
+//         score_time_cell.set_text_content(Some(&result.score_time.to_string()));
+//         row.append_child(&score_time_cell).unwrap();
 
-        let score_moves_cell = document.create_element("td").unwrap();
-        score_moves_cell.set_text_content(Some(&result.score_moves.to_string()));
-        row.append_child(&score_moves_cell).unwrap();
+//         let score_moves_cell = document.create_element("td").unwrap();
+//         score_moves_cell.set_text_content(Some(&result.score_moves.to_string()));
+//         row.append_child(&score_moves_cell).unwrap();
 
-        let game_type_cell = document.create_element("td").unwrap();
-        game_type_cell.set_text_content(Some(&result.game_type));
-        row.append_child(&game_type_cell).unwrap();
+//         let game_type_cell = document.create_element("td").unwrap();
+//         game_type_cell.set_text_content(Some(&result.game_type));
+//         row.append_child(&game_type_cell).unwrap();
 
-        let timestamp_cell = document.create_element("td").unwrap();
-        let timestamp = format_timestamp(result.timestamp.secs_since_epoch, result.timestamp.nanos_since_epoch);
-        timestamp_cell.set_text_content(Some(&timestamp));
-        row.append_child(&timestamp_cell).unwrap();
+//         let timestamp_cell = document.create_element("td").unwrap();
+//         let timestamp = format_timestamp(result.timestamp.secs_since_epoch, result.timestamp.nanos_since_epoch);
+//         timestamp_cell.set_text_content(Some(&timestamp));
+//         row.append_child(&timestamp_cell).unwrap();
 
-        tbody.append_child(&row).unwrap();
-    }
-    table.append_child(&tbody).unwrap();
+//         tbody.append_child(&row).unwrap();
+//     }
+//     table.append_child(&tbody).unwrap();
 
-    body.append_child(&table).unwrap();
-}
+//     body.append_child(&table).unwrap();
+// }
 
-fn format_timestamp(secs_since_epoch: i64, nanos_since_epoch: i32) -> String {
-    let naive = NaiveDateTime::from_timestamp(secs_since_epoch, nanos_since_epoch as u32);
-    let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
-    datetime.format("%Y-%m-%d %H:%M:%S").to_string()
-}
+// fn format_timestamp(secs_since_epoch: i64, nanos_since_epoch: i32) -> String {
+//     let naive = NaiveDateTime::from_timestamp(secs_since_epoch, nanos_since_epoch as u32);
+//     let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+//     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
+// }
 
 pub fn go_back_to_main_page(
     document: &Document,
@@ -391,137 +392,3 @@ pub fn go_back_to_main_page(
     main_page_link.set_attribute("style", "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);").unwrap();
     body.append_child(&main_page_link).unwrap();
 }
-
-// pub fn setup_login_form(
-//     document: &Document,
-//     body: &Element,
-//     window: &web_sys::Window,
-// ) {
-//     println!("setup_login_form");
-//     let document_clone = Rc::new(document.clone());
-//     let window_clone = Rc::new(window.clone());
-//     let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
-//         event.prevent_default();
-//         let form = document_clone.get_element_by_id("login-form").unwrap();
-//         let username = form
-//             .dyn_ref::<HtmlInputElement>()
-//             .expect("login-form is not an HtmlInputElement")
-//             .value();
-//         let password = form
-//             .dyn_ref::<HtmlInputElement>()
-//             .expect("login-form is not an HtmlInputElement")
-//             .value();
-
-//         let storage = window_clone.local_storage().unwrap().unwrap();
-
-//         println!("Username: {}, Password: {}", username, password);
-
-//         let mut opts = RequestInit::new();
-//         opts.set_method("POST");
-//         // opts.body(Some(wasm_bindgen::JsValue::from_str("[1, 2, 3]")));
-//         let body = wasm_bindgen::JsValue::from_str(&format!(r#"{{"name":"{}","password":"{}"}}"#, username, password));
-//         opts.body(Some(&body));
-//         opts.credentials(web_sys::RequestCredentials::Include);
-
-//         let request = Request::new_with_str_and_init(
-//             "http://127.0.0.1:8006/login",
-//             &opts
-//         ).unwrap();
-//         request.headers().set("content-type", "application/json");
-
-//         let window_clone = window_clone.clone();
-//         wasm_bindgen_futures::spawn_local(async move {
-//             let resp_value = JsFuture::from(window_clone.fetch_with_request(&request)).await.unwrap();
-//             // Dalszy kod obsługi odpowiedzi
-//         });
-
-
-//         // let request = web_sys::Request::new_with_str_and_init(
-//         //     "http://127.0.0.1:8006/login",
-//         //     web_sys::RequestInit::new()
-//         //     .method("POST")
-//         //     .body(Some(&JsValue::from_str(&format!(r#"{{"name":"{}","password":"{}"}}"#, username, password))))
-//         //     .headers(&{
-//         //         let headers = web_sys::Headers::new().unwrap();
-//         //         headers.set("Content-Type", "application/json").unwrap();
-//         //         headers.into()
-//         //     }),
-//         // ).unwrap();
-
-//         // let window_clone = window_clone.clone();
-//         // wasm_bindgen_futures::spawn_local(async move {
-//         //         let response = JsFuture::from(window_clone.fetch_with_request(&request)).await.unwrap();
-//         //         let resp: Response = response.dyn_into().unwrap();
-//         //         // let json = JsFuture::from(resp.json()?).await?;
-//         //         println!("{:?}", resp);
-            
-//         //     // if response.ok() {
-//         //     //     let json = response.json().await.unwrap();
-//         //     //     println!("{:?}", json);
-//         //     //     let token = js_sys::Reflect::get(&json, &JsValue::from_str("token")).unwrap().as_string().unwrap();
-//         //     //     storage.set_item("token", &token).unwrap();
-//         //     //     window_clone.location().set_href("/main.html").unwrap();
-//         //     // } else {
-//         //     //     web_sys::console::log_1(&JsValue::from_str("Login failed!"));
-//         //     // }
-//         // });
-
-//     }) as Box<dyn FnMut(web_sys::Event)>);
-//     let form = document.get_element_by_id("login-form").unwrap();
-//     let form: HtmlElement = form.dyn_into().unwrap();
-//     form.add_event_listener_with_callback("submit", closure.as_ref().unchecked_ref()).unwrap();
-//     closure.forget();
-// }
-
-// #[wasm_bindgen]
-// pub fn setup_login_form(
-//     document: &Document,
-//     body: &Element,
-//     window: &web_sys::Window,
-// ) {
-//     let form = document.get_element_by_id("login-form")?;
-//     let form: HtmlElement = form.dyn_into()?;
-
-//     let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
-//         event.prevent_default();
-//         let username_input: HtmlInputElement = document.get_element_by_id("username").unwrap().dyn_into().unwrap();
-//         let password_input: HtmlInputElement = document.get_element_by_id("password").unwrap().dyn_into().unwrap();
-
-//         let username = username_input.value();
-//         let password = password_input.value();
-
-//         let window = window().unwrap();
-//         let storage = window.local_storage().unwrap().unwrap();
-
-//         // Wysyłanie danych logowania do serwera
-//         let request = web_sys::Request::new_with_str_and_init(
-//             "http://127.0.0.1:8006/login",
-//             web_sys::RequestInit::new()
-//                 .method("POST")
-//                 .body(Some(&JsValue::from_str(&format!(r#"{{"name":"{}","password":"{}"}}"#, username, password))))
-//                 .headers(&{
-//                     let headers = web_sys::Headers::new().unwrap();
-//                     headers.set("Content-Type", "application/json").unwrap();
-//                     headers
-//                 }),
-//         ).unwrap();
-
-//         let window_clone = window.clone();
-//         let closure_clone = closure.clone();
-//         wasm_bindgen_futures::spawn_local(async move {
-//             let response = window_clone.fetch_with_request(&request).await.unwrap();
-//             if response.ok() {
-//                 let json = response.json().await.unwrap();
-//                 let token = js_sys::Reflect::get(&json, &JsValue::from_str("token")).unwrap().as_string().unwrap();
-//                 storage.set_item("token", &token).unwrap();
-//                 window_clone.location().set_href("/main.html").unwrap();
-//             } else {
-//                 web_sys::console::log_1(&JsValue::from_str("Login failed!"));
-//             }
-//         });
-
-//     }) as Box<dyn FnMut(_)>);
-
-//     form.add_event_listener_with_callback("submit", closure.as_ref().unchecked_ref()).unwrap();
-//     closure.forget();
-// }

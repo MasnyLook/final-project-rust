@@ -8,6 +8,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::json;
 use reqwest::Client;
 use reqwest::header;
+use crate::models;
 use wasm_bindgen_futures::spawn_local;
 
 pub fn start_game(
@@ -168,21 +169,6 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window:
     send_game_results_to_server(window, total_seconds, total_attempts, document);
 }
 
-#[derive(Deserialize, Debug, Serialize)]
-struct AuthenticationToken {
-    pub user_name: String,
-    pub cookie: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct GameResult {
-    pub token: AuthenticationToken,
-    pub score_time: i32, // can't put u32 in postgresql database
-    pub score_moves: i32,
-    pub game_type: String,
-    pub timestamp: String,
-}
-
 fn send_game_results_to_server(window: &web_sys::Window, total_seconds: u32, total_attempts: u32, document: &Document) {
     let storage = window.local_storage().unwrap().unwrap();
     let token = storage.get_item("token").unwrap().unwrap();
@@ -192,8 +178,8 @@ fn send_game_results_to_server(window: &web_sys::Window, total_seconds: u32, tot
     let button_text = button.text_content().unwrap();
     let now = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
 
-    let game_result = GameResult {
-        token: AuthenticationToken {
+    let game_result = models::GameResultBody {
+        token: models::AuthenticationToken {
             user_name: name,
             cookie: token,
         },
