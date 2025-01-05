@@ -6,6 +6,7 @@ pub mod game_utils;
 pub mod gcd_game;
 mod mainpage_html;
 mod account_html;
+pub mod models;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -90,7 +91,7 @@ fn create_account_tab(
     let account_link = document.create_element("a").unwrap();
     account_link.set_attribute("id", "account-link").unwrap();
     account_link.set_attribute("href", "/account.html").unwrap();
-    account_link.set_inner_html("Moje Konto");
+    account_link.set_inner_html("My Account");
     account_link.set_attribute("style", "position: absolute; top: 10px; right: 10px; display: block;").unwrap();
     body.append_child(&account_link).unwrap();
 }
