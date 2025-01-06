@@ -11,12 +11,13 @@ use actix_web::{
     http::{header::ContentType, StatusCode}
 };
 use serde::{Serialize, Deserialize};
-// use derive_more::{Display};
 use crate::request::{Response, ServerTokenResponse, AccountData};
 use crate::models::{GameResult, AuthenticationToken};
 use crate::request::GameResultData;
 use chrono::{DateTime, Utc};
 use std::time::SystemTime;
+
+use crate::websockets;
 
 #[get("/hello")]
 async fn hello(
@@ -58,6 +59,7 @@ async fn login(
 #[post("/game_result")]
 async fn game_result( // consider name change
     db: Data<Database>,
+    clients: Data<websockets::AppState>,
     game_data: Json<GameResultData>
 ) -> Result<HttpResponse, actix_web::Error> { // not sure if i want to return sth here
     let token = game_data.token.clone();
@@ -71,7 +73,7 @@ async fn game_result( // consider name change
         game_data.game_type.clone(),
         system_time
     );
-    db.save_game_result(&game_result, &token).await; // void function i guess
+    db.save_game_result(&game_result, &token, &clients).await; // void function i guess
     Ok(HttpResponse::Ok().finish())
 }
 

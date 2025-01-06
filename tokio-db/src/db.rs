@@ -6,7 +6,7 @@ use rand::distributions::Alphanumeric;
 use std::collections::HashMap;
 use std::sync::RwLock;
 use std::sync::Mutex;
-
+use crate::websockets;
 
 pub struct Database {
     client: Client,
@@ -91,9 +91,19 @@ impl Database {
         Ok(())
     }
 
-    pub async fn save_game_result(&self, result: &GameResult, token: &AuthenticationToken) -> Result<(), Error> {
+    pub async fn save_game_result(
+        &self, 
+        result: &GameResult, 
+        token: &AuthenticationToken,
+        clients: &websockets::AppState,
+    ) -> Result<(), Error> {
         if !self.authorize_connection(token) {
             return Err(anyhow::anyhow!("Unauthorized"));
+        }
+        match self.check_reload_leaderboard(result.score_time, result.score_moves).await {
+            Ok(true) => clients.send_ping_to_all_clients(),
+            Ok(false) => (),
+            Err(e) => return Err(e),
         }
         self.client.execute(
             "INSERT INTO scores (user_name, score_time, score_moves, game_type, timestamp) 
@@ -167,5 +177,22 @@ impl Database {
             });
         }
         Ok(results)
+    }
+
+    async fn check_reload_leaderboard(&self, player_time: i32, player_moves: i32) -> Result<bool, Error> {
+        let rows = self.client.query(
+            "SELECT score_time, score_moves FROM scores 
+            ORDER BY score_moves ASC, score_time ASC, timestamp ASC
+            LIMIT 1 OFFSET 4;",
+            &[],
+        ).await?;
+
+        let is_qualified = rows.get(0).map_or(true, |row| {
+            let leaderboard_time: i32 = row.get(0);
+            let leaderboard_moves: i32 = row.get(1);
+            player_moves < leaderboard_moves || (player_moves == leaderboard_moves && player_time <= leaderboard_time)
+        });
+        
+        Ok(is_qualified)
     }
 }
