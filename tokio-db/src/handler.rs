@@ -2,13 +2,7 @@ use crate::db::Database;
 use crate::models::{AuthenticationToken, GameResult};
 use crate::request::GameResultData;
 use crate::request::{AccountData, Response, ServerTokenResponse};
-use actix_web::{
-    HttpResponse,
-    get,
-    post,
-    web::Data,
-    web::Json,
-};
+use actix_web::{HttpResponse, get, post, web::Data, web::Json};
 use chrono::DateTime;
 use std::time::SystemTime;
 
