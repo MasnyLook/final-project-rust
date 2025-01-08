@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actix_web::{web, HttpRequest, HttpResponse, Error};
+use actix_web::{Error, HttpRequest, HttpResponse, web};
 use actix_web_actors::ws;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -10,6 +10,7 @@ pub struct AppState {
 }
 
 impl AppState {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         AppState {
             clients: Arc::new(Mutex::new(HashMap::new())),
@@ -36,14 +37,21 @@ impl Actor for WebSocketSession {
         let addr = ctx.address();
         let mut clients = self.state.lock().unwrap();
         clients.insert(self.id, addr);
-        println!("Client {} connected, number of connected players {}", self.id, clients.len());
-        ctx.text("Hello!");
+        println!(
+            "Client {} connected, number of connected players {}",
+            self.id,
+            clients.len()
+        );
     }
 
-    fn stopped(&mut self, ctx: &mut Self::Context) {
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
         let mut clients = self.state.lock().unwrap();
         clients.remove(&self.id);
-        println!("Client {} disconnected, number of connected players {}", self.id, clients.len());
+        println!(
+            "Client {} disconnected, number of connected players {}",
+            self.id,
+            clients.len()
+        );
     }
 }
 
@@ -53,7 +61,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
             Ok(ws::Message::Text(text)) => {
                 println!("Received: {}", text);
             }
-            Ok(ws::Message::Close(reason)) => {
+            Ok(ws::Message::Close(_reason)) => {
                 ctx.stop();
             }
             _ => (),
@@ -73,7 +81,11 @@ impl Handler<SendMessage> for WebSocketSession {
     }
 }
 
-pub async fn ws_index(r: HttpRequest, stream: web::Payload, data: web::Data<AppState>) -> Result<HttpResponse, Error> {
+pub async fn ws_index(
+    r: HttpRequest,
+    stream: web::Payload,
+    data: web::Data<AppState>,
+) -> Result<HttpResponse, Error> {
     let id = Uuid::new_v4();
     let session = WebSocketSession {
         id,
