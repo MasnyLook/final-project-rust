@@ -22,7 +22,7 @@ chrono = "0.4"
 
 [dependencies.web-sys]
 version = "0.3.76"
-features = ['Document', 'Element', 'HtmlElement', 'HtmlInputElement' ,'Node', 'Window', 'Location', 'Request', 'Response', 'console', 'Event', 'RequestInit', 'Headers', 'Storage', 'RequestCredentials', 'RequestMode', 'HtmlFormElement']
+features = ['Document', 'Element', 'HtmlElement', 'HtmlInputElement' ,'Node', 'Window', 'Location', 'Request', 'Response', 'console', 'Event', 'RequestInit', 'Headers', 'Storage', 'RequestCredentials', 'RequestMode', 'HtmlFormElement', 'WebSocket', 'ErrorEvent', 'MessageEvent']
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

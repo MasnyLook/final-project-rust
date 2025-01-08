@@ -2,6 +2,7 @@ mod models;
 mod db;
 mod handler;
 mod request;
+mod websockets;
 
 use tokio_postgres::{NoTls, Client};
 use anyhow::{Context, Error};
@@ -19,6 +20,12 @@ use env_logger::Env;
 use std::time::SystemTime;
 use std::result::Result;
 
+use actix::prelude::*;
+use actix_web::web;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use tokio::time::{self, Duration};
+use uuid::Uuid;
 
 async fn setup_database() -> Result<Client, Error> {
     // Połącz się z bazą danych
@@ -61,6 +68,7 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     // Połącz się z bazą danych
     let client = setup_database().await?;
+    let clients: Arc<Mutex<HashMap<Uuid, Addr<websockets::WebSocketSession>>>> = Arc::new(Mutex::new(HashMap::new()));
     let db = Database::new(client);
     let db_data = Data::new(
         db
@@ -76,6 +84,10 @@ async fn main() -> Result<(), Error> {
             .wrap(logger)
             .wrap(cors)
             .app_data(db_data.clone())
+            .app_data(web::Data::new(websockets::AppState {
+                clients: clients.clone(),
+            }))
+            .route("/ws/", web::get().to(websockets::ws_index))
             .service(create_account)
             .service(login)
             .service(handler::game_result)
@@ -88,40 +100,3 @@ async fn main() -> Result<(), Error> {
 
     Ok(())
 }
-
-
- // // Wstaw dane
-    // client.execute(
-    //     "INSERT INTO users (name, email) VALUES ($1, $2)",
-    //     &[&"John Doe", &"john.doe@example.com"],
-    // ).await?;
-
-    // // Wykonaj zapytanie
-    // for row in client.query("SELECT id, name, email FROM users", &[]).await? {
-    //     let id: i32 = row.get(0);
-    //     let name: &str = row.get(1);
-    //     let email: &str = row.get(2);
-
-    //     println!("Found user: {} - {} - {}", id, name, email);
-    // }
-
-
-
-    // // create game result
-    // let datetime_str = "2021-06-01T00:00:00Z";
-    // let datetime = DateTime::parse_from_rfc3339(datetime_str).expect("Invalid date format");
-    // let system_time = SystemTime::from(datetime);
-    // let game_result = GameResult::new(
-    //     "pablo".to_string(),
-    //     100,
-    //     100,
-    //     "test".to_string(),
-    //     system_time
-    // );
-
-    // // save game result
-    // client.execute(
-    //     "INSERT INTO scores (user_name, score_time, score_moves, game_type, timestamp) 
-    //     VALUES ($1, $2, $3, $4, $5)",
-    //     &[&game_result.user_name, &game_result.score_time, &game_result.score_moves, &game_result.game_type, &game_result.timestamp],
-    // ).await?;

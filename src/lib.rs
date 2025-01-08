@@ -13,6 +13,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element};
+use web_sys::{ErrorEvent, MessageEvent, WebSocket};
 
 use crate::dividers_game::GameDividers;
 use crate::game_abstract_class::Game;
@@ -31,6 +32,7 @@ pub fn main(pathname: String) -> Result<(), JsValue> {
         initialize_game(&document, &body, &window, &game);
     } else if pathname.ends_with("main.html") {
         mainpage_html::create_main_page(&document, &body);
+        setup_websocket();
     } else if pathname.ends_with("dividers") {
         let game: Rc<dyn Game> = Rc::new(GameDividers);
         initialize_game(&document, &body, &window, &game);
@@ -95,4 +97,19 @@ fn create_account_tab(
     account_link.set_inner_html("My Account");
     account_link.set_attribute("style", "position: absolute; top: 10px; right: 10px; display: block;").unwrap();
     body.append_child(&account_link).unwrap();
+}
+
+fn setup_websocket() {
+    let ws = WebSocket::new("ws://127.0.0.1:8006/ws/").unwrap();
+
+    let onmessage_callback = Closure::wrap(Box::new(move |e: MessageEvent| {
+        if let Some(txt) = e.data().as_string() {
+            web_sys::console::log_1(&format!("New message: {}", txt).into());
+            if txt == "Ping" {
+                web_sys::window().unwrap().alert_with_message("Refresh site. New leaderboard!").unwrap();
+            }
+        }
+    }) as Box<dyn FnMut(MessageEvent)>);
+    ws.set_onmessage(Some(onmessage_callback.as_ref().unchecked_ref()));
+    onmessage_callback.forget();
 }
