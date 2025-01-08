@@ -3,12 +3,14 @@ mod handler;
 mod models;
 mod request;
 mod websockets;
+mod credentials;
 
 use anyhow::{Context, Error};
 use tokio_postgres::{Client, NoTls};
 
 use crate::db::Database;
 use crate::handler::{create_account, login};
+use crate::credentials::create_connection_string;
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use std::result::Result;
@@ -21,8 +23,9 @@ use uuid::Uuid;
 
 async fn setup_database() -> Result<Client, Error> {
     // Połącz się z bazą danych
+    let connection_string = credentials::create_connection_string();
     let (client, connection) =
-        tokio_postgres::connect("postgresql://ls448575:dupa123@localhost:5432/db", NoTls)
+        tokio_postgres::connect(&connection_string, NoTls)
             .await
             .context("Error connecting to database!")?;
 
