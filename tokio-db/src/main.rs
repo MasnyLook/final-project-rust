@@ -1,30 +1,22 @@
-mod models;
 mod db;
 mod handler;
+mod models;
 mod request;
 mod websockets;
 
-use tokio_postgres::{NoTls, Client};
 use anyhow::{Context, Error};
-use chrono::{DateTime, Utc};
+use tokio_postgres::{Client, NoTls};
 
-use crate::models::{AuthenticationToken, GameResult};
 use crate::db::Database;
-use crate::handler::{
-    create_account,
-    login,
-};
-use actix_web::{HttpServer, App, web::Data, middleware::Logger};
+use crate::handler::{create_account, login};
 use actix_cors::Cors;
-use env_logger::Env;
-use std::time::SystemTime;
+use actix_web::{App, HttpServer, middleware::Logger, web::Data};
 use std::result::Result;
 
 use actix::prelude::*;
 use actix_web::web;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tokio::time::{self, Duration};
 use uuid::Uuid;
 
 async fn setup_database() -> Result<Client, Error> {
@@ -41,14 +33,20 @@ async fn setup_database() -> Result<Client, Error> {
         }
     });
 
-    client.batch_execute("
+    client
+        .batch_execute(
+            "
         CREATE TABLE IF NOT EXISTS users (
             name TEXT PRIMARY KEY,
             password TEXT NOT NULL
         )
-    ").await?;
+    ",
+        )
+        .await?;
 
-    client.batch_execute("
+    client
+        .batch_execute(
+            "
         CREATE TABLE IF NOT EXISTS scores (
             id SERIAL PRIMARY KEY,
             user_name TEXT NOT NULL,
@@ -58,7 +56,9 @@ async fn setup_database() -> Result<Client, Error> {
             timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_name) REFERENCES users (name)
         )
-    ").await?;
+    ",
+        )
+        .await?;
 
     Ok(client)
 }
@@ -68,11 +68,10 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     // Połącz się z bazą danych
     let client = setup_database().await?;
-    let clients: Arc<Mutex<HashMap<Uuid, Addr<websockets::WebSocketSession>>>> = Arc::new(Mutex::new(HashMap::new()));
+    let clients: Arc<Mutex<HashMap<Uuid, Addr<websockets::WebSocketSession>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
     let db = Database::new(client);
-    let db_data = Data::new(
-        db
-    );
+    let db_data = Data::new(db);
     HttpServer::new(move || {
         let logger = Logger::default();
         let cors = Cors::default()

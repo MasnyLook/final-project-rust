@@ -1,12 +1,12 @@
-use tokio_postgres::{Client, Row};
-use anyhow::Error;
 use crate::models::{AuthenticationToken, GameResult};
-use rand::{thread_rng, Rng};
-use rand::distributions::Alphanumeric;
-use std::collections::HashMap;
-use std::sync::RwLock;
-use std::sync::Mutex;
 use crate::websockets;
+use anyhow::Error;
+use rand::distributions::Alphanumeric;
+use rand::{Rng, thread_rng};
+use std::collections::HashMap;
+use std::sync::Mutex;
+use std::sync::RwLock;
+use tokio_postgres::Client;
 
 pub struct Database {
     client: Client,
@@ -24,7 +24,8 @@ impl Database {
     }
 
     #[allow(dead_code)]
-    pub async fn authenticate_user( // while logging in
+    pub async fn authenticate_user(
+        // while logging in
         &self,
         name: &str,
         password: &str,
@@ -47,7 +48,7 @@ impl Database {
             }
         }
 
-        self.tokens_mutex.lock().unwrap(); // check unlocking
+        let _guard = self.tokens_mutex.lock().unwrap();
         let token = AuthenticationToken {
             user_name: name.to_string(),
             cookie: self.generate_cookie(),
@@ -73,7 +74,7 @@ impl Database {
     }
 
     pub fn authorize_connection(&self, token: &AuthenticationToken) -> bool {
-        self.tokens_mutex.lock().unwrap(); // check unlocking
+        let _guard = self.tokens_mutex.lock().unwrap();
         match self.tokens.read().unwrap().get(&token.user_name) {
             Some(cookie) => token.cookie.eq(cookie),
             None => false,
@@ -81,45 +82,65 @@ impl Database {
     }
 
     pub async fn create_new_user(&self, name: &str, password: &str) -> Result<(), Error> {
-        if self.client.query("SELECT * FROM users WHERE name = ($1)", &[&name]).await?.len() > 0 {
+        if !self
+            .client
+            .query("SELECT * FROM users WHERE name = ($1)", &[&name])
+            .await?
+            .is_empty()
+        {
             return Err(anyhow::anyhow!("User already exists"));
         }
-        self.client.execute(
-            "INSERT INTO users (name, password) VALUES ($1, $2)",
-            &[&name, &password],
-        ).await?;
+        self.client
+            .execute("INSERT INTO users (name, password) VALUES ($1, $2)", &[
+                &name, &password,
+            ])
+            .await?;
         Ok(())
     }
 
     pub async fn save_game_result(
-        &self, 
-        result: &GameResult, 
+        &self,
+        result: &GameResult,
         token: &AuthenticationToken,
         clients: &websockets::AppState,
     ) -> Result<(), Error> {
         if !self.authorize_connection(token) {
             return Err(anyhow::anyhow!("Unauthorized"));
         }
-        match self.check_reload_leaderboard(result.score_time, result.score_moves).await {
+        match self
+            .check_reload_leaderboard(result.score_time, result.score_moves)
+            .await
+        {
             Ok(true) => clients.send_ping_to_all_clients(),
             Ok(false) => (),
             Err(e) => return Err(e),
         }
-        self.client.execute(
-            "INSERT INTO scores (user_name, score_time, score_moves, game_type, timestamp) 
+        self.client
+            .execute(
+                "INSERT INTO scores (user_name, score_time, score_moves, game_type, timestamp) 
             VALUES ($1, $2, $3, $4, $5)",
-            &[&result.user_name, &result.score_time, &result.score_moves, &result.game_type, &result.timestamp],
-        ).await?;
+                &[
+                    &result.user_name,
+                    &result.score_time,
+                    &result.score_moves,
+                    &result.game_type,
+                    &result.timestamp,
+                ],
+            )
+            .await?;
         Ok(())
     }
 
     pub async fn get_leaderboard(&self) -> Result<Vec<GameResult>, Error> {
-        let rows = self.client.query(
-            "SELECT * FROM scores 
+        let rows = self
+            .client
+            .query(
+                "SELECT * FROM scores 
             ORDER BY score_moves ASC, score_time ASC, timestamp ASC
             LIMIT 5",
-            &[],
-        ).await?;
+                &[],
+            )
+            .await?;
         let mut leaderboard = Vec::new();
         for row in rows {
             let game_result = GameResult {
@@ -134,14 +155,18 @@ impl Database {
         Ok(leaderboard)
     }
 
+    #[allow(dead_code)]
     pub async fn get_top10_results(&self, game_type: &str) -> Result<Vec<GameResult>, Error> {
-        let rows = self.client.query(
-            "SELECT * FROM scores 
+        let rows = self
+            .client
+            .query(
+                "SELECT * FROM scores 
             WHERE game_type = ($1) 
             ORDER BY score_moves ASC, score_time ASC 
             LIMIT 10",
-            &[&game_type],
-        ).await?;
+                &[&game_type],
+            )
+            .await?;
         let mut results = Vec::new();
         for row in rows {
             results.push(GameResult {
@@ -155,17 +180,23 @@ impl Database {
         Ok(results)
     }
 
-    pub async fn get_user_results(&self, token: &AuthenticationToken) -> Result<Vec<GameResult>, Error> {
+    pub async fn get_user_results(
+        &self,
+        token: &AuthenticationToken,
+    ) -> Result<Vec<GameResult>, Error> {
         if !self.authorize_connection(token) {
             return Err(anyhow::anyhow!("Unauthorized"));
         }
-        let rows = self.client.query(
-            "SELECT * FROM scores 
+        let rows = self
+            .client
+            .query(
+                "SELECT * FROM scores 
             WHERE user_name = ($1)
             ORDER BY timestamp DESC
             LIMIT 10",
-            &[&token.user_name],
-        ).await?;
+                &[&token.user_name],
+            )
+            .await?;
         let mut results = Vec::new();
         for row in rows {
             results.push(GameResult {
@@ -179,20 +210,28 @@ impl Database {
         Ok(results)
     }
 
-    async fn check_reload_leaderboard(&self, player_time: i32, player_moves: i32) -> Result<bool, Error> {
-        let rows = self.client.query(
-            "SELECT score_time, score_moves FROM scores 
+    async fn check_reload_leaderboard(
+        &self,
+        player_time: i32,
+        player_moves: i32,
+    ) -> Result<bool, Error> {
+        let rows = self
+            .client
+            .query(
+                "SELECT score_time, score_moves FROM scores 
             ORDER BY score_moves ASC, score_time ASC, timestamp ASC
             LIMIT 1 OFFSET 4;",
-            &[],
-        ).await?;
+                &[],
+            )
+            .await?;
 
-        let is_qualified = rows.get(0).map_or(true, |row| {
+        let is_qualified = rows.first().is_none_or(|row| {
             let leaderboard_time: i32 = row.get(0);
             let leaderboard_moves: i32 = row.get(1);
-            player_moves < leaderboard_moves || (player_moves == leaderboard_moves && player_time <= leaderboard_time)
+            player_moves < leaderboard_moves
+                || (player_moves == leaderboard_moves && player_time <= leaderboard_time)
         });
-        
+
         Ok(is_qualified)
     }
 }

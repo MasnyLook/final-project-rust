@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct AuthenticationToken {
@@ -28,4 +28,9 @@ pub struct GameResultBody {
     pub score_moves: i32,
     pub game_type: String,
     pub timestamp: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateAccountResponse {
+    pub success: bool,
 }
