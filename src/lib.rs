@@ -9,6 +9,9 @@ mod account_html;
 pub mod models;
 mod fetch_history;
 
+#[macro_use]
+pub mod macros;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -44,12 +47,12 @@ pub fn main(pathname: String) -> Result<(), JsValue> {
             }
             Ok(None) => {
                 account_html::create_login_form(&document, &body);
-                account_html::setup_restart_button(&document, &body, &window);
+                // account_html::setup_restart_button(&document, &body, &window);
                 account_html::ssetup_login_form(&document, &body, &window);
             }
             Err(_) => {
                 account_html::create_login_form(&document, &body);
-                account_html::setup_restart_button(&document, &body, &window);
+                // account_html::setup_restart_button(&document, &body, &window);
                 account_html::ssetup_login_form(&document, &body, &window);
             }
         }

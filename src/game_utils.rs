@@ -11,41 +11,24 @@ use reqwest::header;
 use crate::models;
 use wasm_bindgen_futures::spawn_local;
 
+use crate::set_element_style;
+use crate::set_element_text;
+
 pub fn start_game(
     document: &Document,
     secret_value: &Rc<RefCell<u32>>,
     timer_id: &Rc<RefCell<Option<i32>>>,
 ) {
-    let start_button = document.get_element_by_id("startgame").unwrap();
-    start_button
-        .set_attribute("style", "display: none;")
-        .unwrap();
-
-    let game_container = document.get_element_by_id("game").unwrap();
-    game_container
-        .set_attribute("style", "display: block;")
-        .unwrap();
-
-    let answer_box_container = document.get_element_by_id("answerBoxContainer").unwrap();
-    answer_box_container
-        .set_attribute("style", "display: block;")
-        .unwrap();
-
-    let answer_box_container = document.get_element_by_id("endgame").unwrap();
-    answer_box_container
-        .set_attribute("style", "display: none;")
-        .unwrap();
+    set_element_style!(document, "startgame", "display: none;");
+    set_element_style!(document, "game", "display: block;");
+    set_element_style!(document, "answerBoxContainer", "display: block;");
+    set_element_style!(document, "endgame", "display: none;");
 
     start_timer(document, timer_id).unwrap();
 
-    let attemps = document.get_element_by_id("attemptsDisplay").unwrap();
-    attemps.set_text_content(Some("number of attempts: 0"));
-
-    let timer = document.get_element_by_id("timerDisplay").unwrap();
-    timer.set_text_content(Some("Time: 0 seconds"));
-
-    let result = document.get_element_by_id("result").unwrap();
-    result.set_text_content(None);
+    set_element_text!(document, "attemptsDisplay", "number of attempts: 0");
+    set_element_text!(document, "timerDisplay", "Time: 0 seconds");
+    set_element_text!(document, "result", "");
 
     let input_element = document.get_element_by_id("inputNumber").unwrap();
     input_element
@@ -125,28 +108,17 @@ pub fn check_answer(
     if answer == secret_value {
         finish_game(document, timer_id, window);
     } else {
-        let result = document.get_element_by_id("answerResult").unwrap();
-        result.set_text_content(Some("Try again!"));
+        set_element_text!(document, "answerResult", "Try again!");
+        update_attempts(document);
     }
 }
 
 fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window: &web_sys::Window) {
-    let game_container = document.get_element_by_id("game").unwrap();
-    game_container
-        .set_attribute("style", "display: none;")
-        .unwrap();
-
-    let answer_box_container = document.get_element_by_id("answerBoxContainer").unwrap();
-    answer_box_container
-        .set_attribute("style", "display: none;")
-        .unwrap();
+    set_element_style!(document, "game", "display: none;");
+    set_element_style!(document, "answerBoxContainer", "display: none;");
+    set_element_style!(document, "endgame", "display: block;");
 
     stop_timer(timer_id);
-
-    let end_game_div = document.get_element_by_id("endgame").unwrap();
-    end_game_div
-        .set_attribute("style", "display: block;")
-        .unwrap();
 
     let timer_element_text = document
         .get_element_by_id("timerDisplay")
@@ -154,8 +126,7 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window:
         .text_content()
         .unwrap();
     let total_seconds = get_number_of_seconds(&timer_element_text);
-    let total_time_info = document.get_element_by_id("totaltime").unwrap();
-    total_time_info.set_text_content(Some(&format!("Total time: {} seconds", total_seconds)));
+    set_element_text!(document, "totaltime", &format!("Total time: {} seconds", total_seconds));
 
     let number_of_attempts = document
         .get_element_by_id("attemptsDisplay")
@@ -163,8 +134,7 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window:
         .text_content()
         .unwrap();
     let total_attempts: u32 = get_number_of_attempts(&number_of_attempts);
-    let total_trials_info = document.get_element_by_id("totaltrials").unwrap();
-    total_trials_info.set_text_content(Some(&format!("Total {}", number_of_attempts)));
+    set_element_text!(document, "totaltrials", &format!("Total {}", number_of_attempts));
 
     send_game_results_to_server(window, total_seconds, total_attempts, document);
 }

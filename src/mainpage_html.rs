@@ -1,38 +1,39 @@
 use web_sys::{Document, Element};
 use crate::fetch_history;
 
+use crate::html;
+
 pub fn create_main_page(document: &Document, body: &Element) {
-    let main_page = document.create_element("div").unwrap();
-    main_page.set_attribute("id", "mainpage").unwrap();
-    main_page
-        .set_attribute("class", "text-center mt-4")
-        .unwrap();
+    let main_page = html!(document, "div", {
+        "id" => "mainpage",
+        "class" => "text-center mt-4"
+    });
 
     let header = document.create_element("h2").unwrap();
     header.set_inner_html("Welcome to the <em>Guess the Number</em> game!");
     header.set_attribute("class", "mb-4").unwrap();
     main_page.append_child(&header).unwrap();
 
-    let games_list_description = document.create_element("p").unwrap();
-    games_list_description.set_text_content(Some("This is the list of all games."));
-    games_list_description
-        .set_attribute("class", "mb-4 text-muted")
-        .unwrap();
+    let games_list_description = html!(document, "p", {
+        "class" => "mb-4 text-muted"
+    }, "This is the list of all games.");
     main_page.append_child(&games_list_description).unwrap();
 
-    let games_list = document.create_element("ul").unwrap();
-    games_list.set_attribute("class", "list-unstyled").unwrap();
+    let games_list = html!(document, "ul", {
+        "class" => "list-unstyled"
+    });
 
     let games = vec![("gcd", "index.html"), ("dividers", "dividers")];
 
     for (name, url) in games {
-        let list_item = document.create_element("li").unwrap();
-        list_item.set_attribute("class", "mb-2").unwrap();
+        let list_item = html!(document, "li", {
+            "class" => "mb-2"
+        });
 
-        let link = document.create_element("a").unwrap();
-        link.set_attribute("href", url).unwrap();
-        link.set_text_content(Some(name));
-        link.set_attribute("class", "text-primary").unwrap();
+        let link = html!(document, "a", {
+            "href" => url,
+            "class" => "text-primary"
+        }, name);
 
         list_item.append_child(&link).unwrap();
         games_list.append_child(&list_item).unwrap();
@@ -40,8 +41,9 @@ pub fn create_main_page(document: &Document, body: &Element) {
 
     main_page.append_child(&games_list).unwrap();
 
-    let footer = document.create_element("div").unwrap();
-    footer.set_attribute("style", "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 10px;").unwrap();
+    let footer = html!(document, "div", {
+        "style" => "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; padding: 10px;"
+    });
     fetch_history::fetch_leaderboard(document, &footer);
 
     body.append_child(&footer).unwrap();
