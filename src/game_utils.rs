@@ -141,8 +141,14 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window:
 
 fn send_game_results_to_server(window: &web_sys::Window, total_seconds: u32, total_attempts: u32, document: &Document) {
     let storage = window.local_storage().unwrap().unwrap();
-    let token = storage.get_item("token").unwrap().unwrap();
-    let name = storage.get_item("name").unwrap().unwrap();
+    let token = match storage.get_item("token") {
+        Ok(Some(token)) => token,
+        Ok(None) | Err(_) => {
+            web_sys::console::log_1(&"We don't send result to the server, as the user is logged out.".into());
+            return;
+        }
+    };
+    let name = storage.get_item("name").unwrap().unwrap(); // if token exists, then name also
 
     let button = document.get_element_by_id("click").unwrap();
     let button_text = button.text_content().unwrap();
@@ -172,18 +178,22 @@ fn send_message_to_server(window: &web_sys::Window, message: &str) {
     let request_body = message.to_string();
 
     spawn_local(async move {
-        let response = client
+        if let Err(err) = client
             .post("http://127.0.0.1:8006/game_result")
             .headers(headers)
             .body(request_body)
             .send()
-            .await;            
+            .await
+        {
+            web_sys::console::log_1(&format!("Failed to send game result: {:?}", err).into());
+        }       
     });
 }
 
 pub fn get_number_of_seconds(timer_text: &str) -> u32 {
+    // timer_text of the form: "Time: <number> seconds"
     let parts: Vec<&str> = timer_text.split(" ").collect();
-    parts[1].parse::<u32>().unwrap_or(42)
+    parts[1].parse::<u32>().unwrap_or(1000)
 }
 
 fn get_number_of_attempts(attempts_info: &str) -> u32 {

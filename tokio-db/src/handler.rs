@@ -36,8 +36,10 @@ async fn create_account(
 
     match db.create_new_user(&name, &password).await {
         Ok(()) => Ok(Json(Response {success: true})),
-        // Err(anyhow::anyhow!("User already exists")) ,
-        Err(_) => Ok(Json(Response {success: false}))
+        Err(e) if e.to_string() == "User already exists" => {
+            Ok(Json(Response {success: false}))
+        },
+        Err(e) => Err(actix_web::error::ErrorInternalServerError(e)),
     }
 }
 
@@ -48,11 +50,14 @@ async fn login(
 ) -> Result<Json<ServerTokenResponse>, actix_web::Error> {
     let name = request_data.name.clone();
     let password = request_data.password.clone();
-    println!("name: {}, password: {}", name, password); // TO remove
+    println!("name: {}, password: {}", name, password);
 
     match db.authenticate_user(&name, &password).await {
         Ok(token) => Ok(Json(ServerTokenResponse {is_authenticated: true, token: token.cookie})),
-        Err(_) => Ok(Json(ServerTokenResponse {is_authenticated: false, token: "".to_string()})),
+        Err(e) if e.to_string() == "Invalid password" => {
+            Ok(Json(ServerTokenResponse { is_authenticated: false, token: "".to_string() }))
+        },
+        Err(e) => Err(actix_web::error::ErrorInternalServerError(e)),
     }
 }
 
@@ -73,7 +78,7 @@ async fn game_result( // consider name change
         game_data.game_type.clone(),
         system_time
     );
-    db.save_game_result(&game_result, &token, &clients).await; // void function i guess
+    db.save_game_result(&game_result, &token, &clients).await.map_err(actix_web::error::ErrorInternalServerError)?;
     Ok(HttpResponse::Ok().finish())
 }
 

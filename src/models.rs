@@ -29,3 +29,8 @@ pub struct GameResultBody {
     pub game_type: String,
     pub timestamp: String,
 }
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CreateAccountResponse {
+    pub success: bool,
+}

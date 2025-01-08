@@ -28,11 +28,13 @@ pub fn fetch_user_board(
                         create_table_from_results(&document_clone, &body_clone, game_results, false);
                     }
                     Err(err) => {
+                        window_clone.alert_with_message("Error fetching user board").unwrap();
                         web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
                     }
                 }
             }
             Err(err) => {
+                window_clone.alert_with_message("Error fetching user board").unwrap();
                 web_sys::console::log_1(&format!("Request error: {:?}", err).into());
             }
         }
@@ -57,11 +59,13 @@ pub fn fetch_leaderboard(
                         create_table_from_results(&document_clone, &body_clone, game_results, true);
                     }
                     Err(err) => {
+                        window_clone.alert_with_message("Error fetching leaderboard").unwrap();
                         web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
                     }
                 }
             }
             Err(err) => {
+                window_clone.alert_with_message("Error fetching leaderboard").unwrap();
                 web_sys::console::log_1(&format!("Request error: {:?}", err).into());
             }
         }
@@ -186,4 +190,4 @@ fn format_timestamp(secs_since_epoch: i64, nanos_since_epoch: i32) -> String {
     let naive = NaiveDateTime::from_timestamp(secs_since_epoch, nanos_since_epoch as u32);
     let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
-}  // to utils
+}

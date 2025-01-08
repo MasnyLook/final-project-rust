@@ -56,6 +56,12 @@ pub fn create_login_form(document: &Document, body: &Element) {
     }, "Login").dyn_into().unwrap();
     form.append_child(&login_button).unwrap();
 
+    let register_button = html!(document, "button", {
+        "type" => "button",
+        "id" => "register-button"
+    }, "Register").dyn_into().unwrap();
+    form.append_child(&register_button).unwrap();
+
     form_container.append_child(&form).unwrap();
     body.append_child(&form_container).unwrap();
 }
@@ -64,6 +70,96 @@ pub fn create_login_form(document: &Document, body: &Element) {
 struct LoginResponse {
     is_authenticated: bool,
     token: String,
+}
+
+fn prepare_request_body(document: &Document) -> (String, String) {
+    let form = document.get_element_by_id("login-form")
+        .expect("login-form not found")
+        .dyn_into::<HtmlFormElement>()
+        .expect("login-form is not an HtmlFormElement");
+
+    let username_input = form.query_selector("#username")
+        .expect("username input not found")
+        .expect("username input not found")
+        .dyn_into::<HtmlInputElement>()
+        .expect("username is not an HtmlInputElement");
+
+    let password_input = form.query_selector("#password")
+        .expect("password input not found")
+        .expect("password input not found")
+        .dyn_into::<HtmlInputElement>()
+        .expect("password is not an HtmlInputElement");
+
+    let username = username_input.value();
+    let password = password_input.value();
+
+    let request_body = serde_json::json!({
+        "name": username,
+        "password": password
+    }).to_string();
+
+    (request_body, username)
+}
+
+pub fn setup_register_button(
+    document: &Document,
+    body: &Element,
+    window: &web_sys::Window,
+) {
+    let document_clone = document.clone();
+    let window_clone = window.clone();
+    let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
+        // create request
+        let client = Client::new();
+        let (request_body, _) = prepare_request_body(&document_clone);
+        web_sys::console::log_1(&request_body.clone().into());
+        let mut headers = header::HeaderMap::new();
+        headers.insert("Content-Type", "application/json".parse().unwrap());
+        let window_clone = window_clone.clone();
+
+        spawn_local(async move {
+            let res = client.post("http://127.0.0.1:8006/create_account")
+                .headers(headers)
+                .body(request_body.to_string())
+                .send()
+                .await;
+            match res {
+                Ok(response) => {
+                    let text = response.text().await;
+                    match text {
+                        Ok(body) => {
+                            match serde_json::from_str::<models::CreateAccountResponse>(&body) {
+                                Ok(create_account_response) => {
+                                    if create_account_response.success {
+                                        window_clone.location().set_href("/account.html").unwrap();
+                                        window_clone.alert_with_message("Account created successfully.").unwrap();
+                                    } else {
+                                        window_clone.location().set_href("/account.html").unwrap();
+                                        window_clone.alert_with_message("Account creation failed. Nickname already taken.").unwrap();
+                                    }
+                                }
+                                Err(err) => {
+                                    window_clone.alert_with_message("Server error.").unwrap();
+                                    web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
+                                }
+                            }
+                        },
+                        Err(err) => {
+                            window_clone.alert_with_message("Server error.").unwrap();
+                            web_sys::console::log_1(&format!("Error reading response body: {:?}", err).into());
+                        }
+                    }
+                }
+                Err(err) => {
+                    window_clone.alert_with_message("Server error.").unwrap();
+                    web_sys::console::log_1(&format!("Request error: {:?}", err).into());
+                }
+            }
+        });
+    }) as Box<dyn FnMut(_)>);
+    let register_button = document.get_element_by_id("register-button").unwrap();
+    register_button.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref()).unwrap();
+    closure.forget();
 }
 
 pub fn ssetup_login_form(
@@ -75,34 +171,10 @@ pub fn ssetup_login_form(
     let window_clone = window.clone();
     let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
         event.prevent_default(); // prevent form submission
-        // fetch login data
-        let form = document_clone.get_element_by_id("login-form")
-            .expect("login-form not found")
-            .dyn_into::<HtmlFormElement>()
-            .expect("login-form is not an HtmlFormElement");
-
-        let username_input = form.query_selector("#username")
-            .expect("username input not found")
-            .expect("username input not found")
-            .dyn_into::<HtmlInputElement>()
-            .expect("username is not an HtmlInputElement");
-
-        let password_input = form.query_selector("#password")
-            .expect("password input not found")
-            .expect("password input not found")
-            .dyn_into::<HtmlInputElement>()
-            .expect("password is not an HtmlInputElement");
-
-        let username = username_input.value();
-        let password = password_input.value();
-
         // create request
         let storage = window_clone.local_storage().unwrap().unwrap();
         let client = Client::new();
-        let request_body = serde_json::json!({
-            "name": username,
-            "password": password
-        });
+        let (request_body, username) = prepare_request_body(&document_clone);
         let mut headers = header::HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
         let window_clone = window_clone.clone();
@@ -126,25 +198,27 @@ pub fn ssetup_login_form(
                                         web_sys::console::log_1(&format!("isAuthenticated: {}", login_response.is_authenticated).into());
                                         web_sys::console::log_1(&format!("cookie: {}", login_response.token).into());
                                         if login_response.is_authenticated {
-                                            storage.set_item("token", &login_response.token).unwrap(); // CHECK
+                                            storage.set_item("token", &login_response.token).unwrap();
                                             storage.set_item("name", &username).unwrap();
                                             window_clone.location().set_href("/account.html").unwrap();
                                         } else {
                                             window_clone.alert_with_message("Authentication failed. Please check your username and password.").unwrap();
-                                        }
-                                        storage.set_item("auth", &login_response.is_authenticated.to_string()).unwrap();
+                                        }                                    
                                     }
                                     Err(err) => {
+                                        window_clone.alert_with_message("Server error.").unwrap();
                                         web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
                                     }
                                 }
                             }
                             Err(err) => {
+                                window_clone.alert_with_message("Server error.").unwrap();
                                 web_sys::console::log_1(&format!("Error reading response body: {:?}", err).into());
                             }
                         }
                     }
                     Err(err) => {
+                        window_clone.alert_with_message("Server error.").unwrap();
                         web_sys::console::log_1(&format!("Request error: {:?}", err).into());
                     }
                 }
