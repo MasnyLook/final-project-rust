@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct AuthenticationToken {

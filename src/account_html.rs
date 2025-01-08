@@ -1,18 +1,14 @@
-use web_sys::{Document, Element};
-use web_sys::{window, HtmlElement, HtmlInputElement, Request, RequestInit, Headers, Response, RequestMode, HtmlFormElement};
-use wasm_bindgen_futures::{spawn_local, JsFuture};
-use wasm_bindgen::JsCast;
-use wasm_bindgen::prelude::*;
-use js_sys::Reflect;
-use std::rc::Rc;
-use std::cell::RefCell;
-use serde::{Deserialize, Serialize};
-use crate::models;
 use crate::fetch_history;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use crate::models;
+use serde::Deserialize;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use wasm_bindgen_futures::spawn_local;
+use web_sys::{window, HtmlElement, HtmlFormElement, HtmlInputElement};
+use web_sys::{Document, Element};
 
-use reqwest::Client;
 use reqwest::header;
+use reqwest::Client;
 
 use crate::html;
 
@@ -35,7 +31,9 @@ pub fn create_login_form(document: &Document, body: &Element) {
         "id" => "username",
         "name" => "username",
         "required" => "true"
-    }).dyn_into().unwrap();
+    })
+    .dyn_into()
+    .unwrap();
     form.append_child(&username_input).unwrap();
 
     // Password
@@ -47,19 +45,25 @@ pub fn create_login_form(document: &Document, body: &Element) {
         "id" => "password",
         "name" => "password",
         "required" => "true"
-    }).dyn_into().unwrap();
+    })
+    .dyn_into()
+    .unwrap();
     form.append_child(&password_input).unwrap();
 
     // Login button
     let login_button = html!(document, "button", {
         "type" => "submit"
-    }, "Login").dyn_into().unwrap();
+    }, "Login")
+    .dyn_into()
+    .unwrap();
     form.append_child(&login_button).unwrap();
 
     let register_button = html!(document, "button", {
         "type" => "button",
         "id" => "register-button"
-    }, "Register").dyn_into().unwrap();
+    }, "Register")
+    .dyn_into()
+    .unwrap();
     form.append_child(&register_button).unwrap();
 
     form_container.append_child(&form).unwrap();
@@ -73,18 +77,21 @@ struct LoginResponse {
 }
 
 fn prepare_request_body(document: &Document) -> (String, String) {
-    let form = document.get_element_by_id("login-form")
+    let form = document
+        .get_element_by_id("login-form")
         .expect("login-form not found")
         .dyn_into::<HtmlFormElement>()
         .expect("login-form is not an HtmlFormElement");
 
-    let username_input = form.query_selector("#username")
+    let username_input = form
+        .query_selector("#username")
         .expect("username input not found")
         .expect("username input not found")
         .dyn_into::<HtmlInputElement>()
         .expect("username is not an HtmlInputElement");
 
-    let password_input = form.query_selector("#password")
+    let password_input = form
+        .query_selector("#password")
         .expect("password input not found")
         .expect("password input not found")
         .dyn_into::<HtmlInputElement>()
@@ -96,19 +103,16 @@ fn prepare_request_body(document: &Document) -> (String, String) {
     let request_body = serde_json::json!({
         "name": username,
         "password": password
-    }).to_string();
+    })
+    .to_string();
 
     (request_body, username)
 }
 
-pub fn setup_register_button(
-    document: &Document,
-    body: &Element,
-    window: &web_sys::Window,
-) {
+pub fn setup_register_button(document: &Document, _body: &Element, window: &web_sys::Window) {
     let document_clone = document.clone();
     let window_clone = window.clone();
-    let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
+    let closure = Closure::wrap(Box::new(move || {
         // create request
         let client = Client::new();
         let (request_body, _) = prepare_request_body(&document_clone);
@@ -118,7 +122,8 @@ pub fn setup_register_button(
         let window_clone = window_clone.clone();
 
         spawn_local(async move {
-            let res = client.post("http://127.0.0.1:8006/create_account")
+            let res = client
+                .post("http://127.0.0.1:8006/create_account")
                 .headers(headers)
                 .body(request_body.to_string())
                 .send()
@@ -132,21 +137,109 @@ pub fn setup_register_button(
                                 Ok(create_account_response) => {
                                     if create_account_response.success {
                                         window_clone.location().set_href("/account.html").unwrap();
-                                        window_clone.alert_with_message("Account created successfully.").unwrap();
+                                        window_clone
+                                            .alert_with_message("Account created successfully.")
+                                            .unwrap();
                                     } else {
                                         window_clone.location().set_href("/account.html").unwrap();
-                                        window_clone.alert_with_message("Account creation failed. Nickname already taken.").unwrap();
+                                        window_clone
+                                            .alert_with_message(
+                                                "Account creation failed. Nickname already taken.",
+                                            )
+                                            .unwrap();
                                     }
                                 }
                                 Err(err) => {
                                     window_clone.alert_with_message("Server error.").unwrap();
-                                    web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
+                                    web_sys::console::log_1(
+                                        &format!("Error parsing JSON: {:?}", err).into(),
+                                    );
                                 }
                             }
-                        },
+                        }
                         Err(err) => {
                             window_clone.alert_with_message("Server error.").unwrap();
-                            web_sys::console::log_1(&format!("Error reading response body: {:?}", err).into());
+                            web_sys::console::log_1(
+                                &format!("Error reading response body: {:?}", err).into(),
+                            );
+                        }
+                    }
+                }
+                Err(err) => {
+                    window_clone.alert_with_message("Server error.").unwrap();
+                    web_sys::console::log_1(&format!("Request error: {:?}", err).into());
+                }
+            }
+        });
+    }) as Box<dyn FnMut()>);
+    let register_button = document.get_element_by_id("register-button").unwrap();
+    register_button
+        .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())
+        .unwrap();
+    closure.forget();
+}
+
+pub fn ssetup_login_form(document: &Document, _body: &Element, window: &web_sys::Window) {
+    let document_clone = document.clone();
+    let window_clone = window.clone();
+    let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
+        event.prevent_default(); // prevent form submission
+                                 // create request
+        let storage = window_clone.local_storage().unwrap().unwrap();
+        let client = Client::new();
+        let (request_body, username) = prepare_request_body(&document_clone);
+        let mut headers = header::HeaderMap::new();
+        headers.insert("Content-Type", "application/json".parse().unwrap());
+        let window_clone = window_clone.clone();
+
+        spawn_local(async move {
+            // send request
+            let res = client
+                .post("http://127.0.0.1:8006/login")
+                .headers(headers)
+                .body(request_body.to_string())
+                .send()
+                .await;
+            match res {
+                Ok(response) => {
+                    let text = response.text().await;
+                    match text {
+                        Ok(body) => {
+                            // handle response
+                            web_sys::console::log_1(&body.clone().into());
+                            match serde_json::from_str::<LoginResponse>(&body) {
+                                Ok(login_response) => {
+                                    web_sys::console::log_1(
+                                        &format!(
+                                            "isAuthenticated: {}",
+                                            login_response.is_authenticated
+                                        )
+                                        .into(),
+                                    );
+                                    web_sys::console::log_1(
+                                        &format!("cookie: {}", login_response.token).into(),
+                                    );
+                                    if login_response.is_authenticated {
+                                        storage.set_item("token", &login_response.token).unwrap();
+                                        storage.set_item("name", &username).unwrap();
+                                        window_clone.location().set_href("/account.html").unwrap();
+                                    } else {
+                                        window_clone.alert_with_message("Authentication failed. Please check your username and password.").unwrap();
+                                    }
+                                }
+                                Err(err) => {
+                                    window_clone.alert_with_message("Server error.").unwrap();
+                                    web_sys::console::log_1(
+                                        &format!("Error parsing JSON: {:?}", err).into(),
+                                    );
+                                }
+                            }
+                        }
+                        Err(err) => {
+                            window_clone.alert_with_message("Server error.").unwrap();
+                            web_sys::console::log_1(
+                                &format!("Error reading response body: {:?}", err).into(),
+                            );
                         }
                     }
                 }
@@ -157,76 +250,10 @@ pub fn setup_register_button(
             }
         });
     }) as Box<dyn FnMut(_)>);
-    let register_button = document.get_element_by_id("register-button").unwrap();
-    register_button.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref()).unwrap();
-    closure.forget();
-}
-
-pub fn ssetup_login_form(
-    document: &Document,
-    body: &Element,
-    window: &web_sys::Window,
-) {
-    let document_clone = document.clone();
-    let window_clone = window.clone();
-    let closure = Closure::wrap(Box::new(move |event: web_sys::Event| {
-        event.prevent_default(); // prevent form submission
-        // create request
-        let storage = window_clone.local_storage().unwrap().unwrap();
-        let client = Client::new();
-        let (request_body, username) = prepare_request_body(&document_clone);
-        let mut headers = header::HeaderMap::new();
-        headers.insert("Content-Type", "application/json".parse().unwrap());
-        let window_clone = window_clone.clone();
-
-        spawn_local(async move {
-            // send request
-            let res = client.post("http://127.0.0.1:8006/login")
-                .headers(headers)
-                .body(request_body.to_string())
-                .send()
-                .await;
-                match res {
-                    Ok(response) => {
-                        let text = response.text().await;
-                        match text {
-                            Ok(body) => {
-                                // handle response
-                                web_sys::console::log_1(&body.clone().into());
-                                match serde_json::from_str::<LoginResponse>(&body) {
-                                    Ok(login_response) => {
-                                        web_sys::console::log_1(&format!("isAuthenticated: {}", login_response.is_authenticated).into());
-                                        web_sys::console::log_1(&format!("cookie: {}", login_response.token).into());
-                                        if login_response.is_authenticated {
-                                            storage.set_item("token", &login_response.token).unwrap();
-                                            storage.set_item("name", &username).unwrap();
-                                            window_clone.location().set_href("/account.html").unwrap();
-                                        } else {
-                                            window_clone.alert_with_message("Authentication failed. Please check your username and password.").unwrap();
-                                        }                                    
-                                    }
-                                    Err(err) => {
-                                        window_clone.alert_with_message("Server error.").unwrap();
-                                        web_sys::console::log_1(&format!("Error parsing JSON: {:?}", err).into());
-                                    }
-                                }
-                            }
-                            Err(err) => {
-                                window_clone.alert_with_message("Server error.").unwrap();
-                                web_sys::console::log_1(&format!("Error reading response body: {:?}", err).into());
-                            }
-                        }
-                    }
-                    Err(err) => {
-                        window_clone.alert_with_message("Server error.").unwrap();
-                        web_sys::console::log_1(&format!("Request error: {:?}", err).into());
-                    }
-                }
-        });
-    }) as Box<dyn FnMut(_)>);
     let form = document.get_element_by_id("login-form").unwrap();
     let form: HtmlElement = form.dyn_into().unwrap();
-    form.add_event_listener_with_callback("submit", closure.as_ref().unchecked_ref()).unwrap();
+    form.add_event_listener_with_callback("submit", closure.as_ref().unchecked_ref())
+        .unwrap();
     closure.forget();
 }
 
@@ -242,7 +269,14 @@ pub fn create_account_page(document: &Document, body: &Element) {
     body.append_child(&logout_button).unwrap();
 
     // welcome message
-    let name = window().unwrap().local_storage().unwrap().unwrap().get_item("name").unwrap().unwrap();
+    let name = window()
+        .unwrap()
+        .local_storage()
+        .unwrap()
+        .unwrap()
+        .get_item("name")
+        .unwrap()
+        .unwrap();
     let div = html!(document, "div", {
         "style" => "font-size: 48px; margin-top: 20px; margin-left: 20px; color: lightblue; font-family: Arial, sans-serif;"
     }, &format!("Hello, {}!", name));
@@ -258,14 +292,13 @@ pub fn create_account_page(document: &Document, body: &Element) {
     }) as Box<dyn FnMut()>);
 
     let logout_button = document.get_element_by_id("logoutButton").unwrap();
-    logout_button.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref()).unwrap();
+    logout_button
+        .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())
+        .unwrap();
     closure.forget();
 }
 
-pub fn go_back_to_main_page(
-    document: &Document,
-    body: &Element
-) {
+pub fn go_back_to_main_page(document: &Document, body: &Element) {
     let main_page_link = html!(document, "a", {
         "href" => "/main.html",
         "style" => "position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);"

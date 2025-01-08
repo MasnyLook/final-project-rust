@@ -1,13 +1,13 @@
+mod account_html;
 pub mod dividers_game;
+mod fetch_history;
 pub mod game_abstract_class;
 mod game_buttons;
 mod game_html_template;
 pub mod game_utils;
 pub mod gcd_game;
 mod mainpage_html;
-mod account_html;
 pub mod models;
-mod fetch_history;
 
 #[macro_use]
 pub mod macros;
@@ -16,7 +16,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element};
-use web_sys::{ErrorEvent, MessageEvent, WebSocket};
+use web_sys::{MessageEvent, WebSocket};
 
 use crate::dividers_game::GameDividers;
 use crate::game_abstract_class::Game;
@@ -42,7 +42,7 @@ pub fn main(pathname: String) -> Result<(), JsValue> {
     } else if pathname.ends_with("account.html") {
         let storage = window.local_storage().unwrap().unwrap();
         match storage.get_item("token") {
-            Ok(Some(token)) => {
+            Ok(Some(_token)) => {
                 account_html::create_account_page(&document, &body);
             }
             Ok(None) => {
@@ -86,20 +86,22 @@ fn initialize_game(
 
     game_buttons::setup_start_button(document, &secret_value, &timer_id);
     game_buttons::setup_click_button(document, &secret_value, window, game);
-    game_buttons::setup_answer_button(document, &secret_value, &timer_id, &window);
+    game_buttons::setup_answer_button(document, &secret_value, &timer_id, window);
     game_buttons::setup_restart_button(document, &secret_value, &timer_id);
     game_buttons::setup_reroll_button(document, &secret_value);
 }
 
-fn create_account_tab(
-    document: &Document,
-    body: &Element
-) {
+fn create_account_tab(document: &Document, body: &Element) {
     let account_link = document.create_element("a").unwrap();
     account_link.set_attribute("id", "account-link").unwrap();
     account_link.set_attribute("href", "/account.html").unwrap();
     account_link.set_inner_html("My Account");
-    account_link.set_attribute("style", "position: absolute; top: 10px; right: 10px; display: block;").unwrap();
+    account_link
+        .set_attribute(
+            "style",
+            "position: absolute; top: 10px; right: 10px; display: block;",
+        )
+        .unwrap();
     body.append_child(&account_link).unwrap();
 }
 
@@ -110,7 +112,10 @@ fn setup_websocket() {
         if let Some(txt) = e.data().as_string() {
             web_sys::console::log_1(&format!("New message: {}", txt).into());
             if txt == "Ping" {
-                web_sys::window().unwrap().alert_with_message("Refresh site. New leaderboard!").unwrap();
+                web_sys::window()
+                    .unwrap()
+                    .alert_with_message("Refresh site. New leaderboard!")
+                    .unwrap();
             }
         }
     }) as Box<dyn FnMut(MessageEvent)>);

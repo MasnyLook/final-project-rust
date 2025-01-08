@@ -1,15 +1,13 @@
-use wasm_bindgen::prelude::*;
+use crate::models;
 use chrono::prelude::*;
 use getrandom::getrandom;
+use reqwest::header;
+use reqwest::Client;
 use std::cell::RefCell;
 use std::rc::Rc;
-use web_sys::{Document, HtmlInputElement};
-use serde::{Serialize, Deserialize};
-use serde_json::json;
-use reqwest::Client;
-use reqwest::header;
-use crate::models;
+use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
+use web_sys::{Document, HtmlInputElement};
 
 use crate::set_element_style;
 use crate::set_element_text;
@@ -126,7 +124,11 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window:
         .text_content()
         .unwrap();
     let total_seconds = get_number_of_seconds(&timer_element_text);
-    set_element_text!(document, "totaltime", &format!("Total time: {} seconds", total_seconds));
+    set_element_text!(
+        document,
+        "totaltime",
+        &format!("Total time: {} seconds", total_seconds)
+    );
 
     let number_of_attempts = document
         .get_element_by_id("attemptsDisplay")
@@ -134,17 +136,28 @@ fn finish_game(document: &Document, timer_id: &Rc<RefCell<Option<i32>>>, window:
         .text_content()
         .unwrap();
     let total_attempts: u32 = get_number_of_attempts(&number_of_attempts);
-    set_element_text!(document, "totaltrials", &format!("Total {}", number_of_attempts));
+    set_element_text!(
+        document,
+        "totaltrials",
+        &format!("Total {}", number_of_attempts)
+    );
 
     send_game_results_to_server(window, total_seconds, total_attempts, document);
 }
 
-fn send_game_results_to_server(window: &web_sys::Window, total_seconds: u32, total_attempts: u32, document: &Document) {
+fn send_game_results_to_server(
+    window: &web_sys::Window,
+    total_seconds: u32,
+    total_attempts: u32,
+    document: &Document,
+) {
     let storage = window.local_storage().unwrap().unwrap();
     let token = match storage.get_item("token") {
         Ok(Some(token)) => token,
         Ok(None) | Err(_) => {
-            web_sys::console::log_1(&"We don't send result to the server, as the user is logged out.".into());
+            web_sys::console::log_1(
+                &"We don't send result to the server, as the user is logged out.".into(),
+            );
             return;
         }
     };
@@ -169,12 +182,10 @@ fn send_game_results_to_server(window: &web_sys::Window, total_seconds: u32, tot
     send_message_to_server(window, &request_body);
 }
 
-fn send_message_to_server(window: &web_sys::Window, message: &str) {
-    let storage = window.local_storage().unwrap().unwrap();
+fn send_message_to_server(_window: &web_sys::Window, message: &str) {
     let client = Client::new();
     let mut headers = header::HeaderMap::new();
     headers.insert("Content-Type", "application/json".parse().unwrap());
-    let window_clone = window.clone();
     let request_body = message.to_string();
 
     spawn_local(async move {
@@ -186,7 +197,7 @@ fn send_message_to_server(window: &web_sys::Window, message: &str) {
             .await
         {
             web_sys::console::log_1(&format!("Failed to send game result: {:?}", err).into());
-        }       
+        }
     });
 }
 

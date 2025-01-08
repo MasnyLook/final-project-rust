@@ -85,7 +85,12 @@ pub fn setup_answer_button(
     let timer_id_clone = Rc::clone(timer_id);
     let window_clone = window.clone();
     let closure = Closure::wrap(Box::new(move || {
-        game_utils::check_answer(&document_clone, &secret_value_clone, &timer_id_clone, &window_clone);
+        game_utils::check_answer(
+            &document_clone,
+            &secret_value_clone,
+            &timer_id_clone,
+            &window_clone,
+        );
     }) as Box<dyn FnMut()>);
 
     let submit_button = document.get_element_by_id("submitButton").unwrap();

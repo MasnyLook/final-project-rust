@@ -1,5 +1,5 @@
-use web_sys::{Document, Element};
 use crate::fetch_history;
+use web_sys::{Document, Element};
 
 use crate::html;
 

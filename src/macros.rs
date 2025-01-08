@@ -25,15 +25,20 @@ macro_rules! html {
 #[macro_export]
 macro_rules! set_element_style {
     ($document:expr, $id:expr, $style:expr) => {{
-        $document.get_element_by_id($id).unwrap()
-            .set_attribute("style", $style).unwrap();
+        $document
+            .get_element_by_id($id)
+            .unwrap()
+            .set_attribute("style", $style)
+            .unwrap();
     }};
 }
 
 #[macro_export]
 macro_rules! set_element_text {
     ($document:expr, $id:expr, $text:expr) => {{
-        $document.get_element_by_id($id).unwrap()
+        $document
+            .get_element_by_id($id)
+            .unwrap()
             .set_text_content(Some($text));
     }};
 }
